@@ -1,5 +1,5 @@
 package dev.semkoksharov.vibeshub2.dto.user;
-import dev.semkoksharov.vibeshub2.dto.AlbumSimpleDTO;
+import dev.semkoksharov.vibeshub2.dto.album.AlbumSimpleDTO;
 import dev.semkoksharov.vibeshub2.dto.SongSimpleDTO;
 
 import java.util.Set;
@@ -11,7 +11,7 @@ public class ArtistDTO {
     private Set<AlbumSimpleDTO> albums;
     private Set<SongSimpleDTO> songs;
 
-    // Getters and setters
+
     public Long getId() {
         return id;
     }

@@ -1,5 +1,4 @@
-package dev.semkoksharov.vibeshub2.dto;
-import dev.semkoksharov.vibeshub2.dto.ArtistSimpleDTO;
+package dev.semkoksharov.vibeshub2.dto.album;
 
 import java.util.Set;
 

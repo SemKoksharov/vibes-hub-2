@@ -1,7 +1,7 @@
 package dev.semkoksharov.vibeshub2.model;
 
 import jakarta.persistence.*;
-
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -14,18 +14,22 @@ public class Album extends BaseEntity {
     private int year;
 
     @ManyToMany(fetch = FetchType.LAZY)
-    private Set<Artist> artists;
+    private Set<Artist> artists = new HashSet<>();
 
-    public Album() {
-    }
+    @OneToMany(mappedBy = "album", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<Song> songs = new HashSet<>();
 
-    public Album(String title, String coverPhotoUrl, String minioCoverPath, int year, Set<Artist> artists) {
+    public Album() {}
+
+    public Album(String title, String coverPhotoUrl, String minioCoverPath, int year, Set<Artist> artists, Set<Song> songs) {
         this.title = title;
         this.coverPhotoUrl = coverPhotoUrl;
         this.minioCoverPath = minioCoverPath;
         this.year = year;
         this.artists = artists;
+        this.songs = songs;
     }
+
 
     public String getTitle() {
         return title;
@@ -63,8 +67,26 @@ public class Album extends BaseEntity {
         return artists;
     }
 
-    public void setArtists(Set<Artist> artist) {
-        this.artists = artist;
+    public void setArtists(Set<Artist> artists) {
+        this.artists = artists;
+    }
+
+    public Set<Song> getSongs() {
+        return songs;
+    }
+
+    public void setSongs(Set<Song> songs) {
+        this.songs = songs;
+    }
+
+    public void addSong(Song song) {
+        this.songs.add(song);
+        song.setAlbum(this);
+    }
+
+    public void removeSong(Song song) {
+        this.songs.remove(song);
+        song.setAlbum(null);
     }
 
     public void addArtist(Artist artist) {

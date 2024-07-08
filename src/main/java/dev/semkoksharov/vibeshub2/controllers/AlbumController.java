@@ -1,7 +1,7 @@
 package dev.semkoksharov.vibeshub2.controllers;
 
-import dev.semkoksharov.vibeshub2.dto.AlbumDTO;
-import dev.semkoksharov.vibeshub2.dto.AlbumResponseDTO;
+import dev.semkoksharov.vibeshub2.dto.album.AlbumDTO;
+import dev.semkoksharov.vibeshub2.dto.album.AlbumResponseDTO;
 import dev.semkoksharov.vibeshub2.service.AlbumService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

@@ -1,12 +1,14 @@
 package dev.semkoksharov.vibeshub2.service;
 
-import dev.semkoksharov.vibeshub2.dto.AlbumDTO;
-import dev.semkoksharov.vibeshub2.dto.AlbumResponseDTO;
-import dev.semkoksharov.vibeshub2.dto.ArtistSimpleDTO;
+import dev.semkoksharov.vibeshub2.dto.album.AlbumDTO;
+import dev.semkoksharov.vibeshub2.dto.album.AlbumResponseDTO;
+import dev.semkoksharov.vibeshub2.dto.album.ArtistSimpleDTO;
 import dev.semkoksharov.vibeshub2.model.Album;
 import dev.semkoksharov.vibeshub2.model.Artist;
+import dev.semkoksharov.vibeshub2.model.Song;
 import dev.semkoksharov.vibeshub2.repository.AlbumRepo;
 import dev.semkoksharov.vibeshub2.repository.ArtistDetailsRepo;
+import dev.semkoksharov.vibeshub2.repository.SongRepo;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,12 +24,14 @@ public class AlbumService {
 
     private final AlbumRepo albumRepository;
     private final ArtistDetailsRepo artistRepo;
+    private final SongRepo songRepo;
     private final ModelMapper modelMapper;
 
     @Autowired
-    public AlbumService(AlbumRepo albumRepository, ArtistDetailsRepo artistRepo, ModelMapper modelMapper) {
+    public AlbumService(AlbumRepo albumRepository, ArtistDetailsRepo artistRepo, SongRepo songRepo, ModelMapper modelMapper) {
         this.albumRepository = albumRepository;
         this.artistRepo = artistRepo;
+        this.songRepo = songRepo;
         this.modelMapper = modelMapper;
     }
 
@@ -39,7 +43,6 @@ public class AlbumService {
 
         Album savedAlbum = albumRepository.save(album);
 
-        // Проходим по каждому артисту и добавляем созданный альбом в их список альбомов
         artists.forEach(artist -> artist.getAlbums().add(savedAlbum));
         artistRepo.saveAll(artists);
 
@@ -63,7 +66,8 @@ public class AlbumService {
             responseDTO.setArtists(artistDTOs);
             return responseDTO;
         } else {
-            return null;
+            //todo change to custom exception
+            throw new IllegalArgumentException("Album not found");
         }
     }
 
@@ -77,6 +81,11 @@ public class AlbumService {
             responseDTO.setArtists(artistDTOs);
             return responseDTO;
         }).collect(Collectors.toList());
+
+        if (albums.isEmpty()) {
+            //todo change to custom exception
+            throw new IllegalArgumentException("No albums found");
+        }
     }
 
     public void deleteAlbumById(Long id) {
@@ -86,11 +95,11 @@ public class AlbumService {
     public AlbumResponseDTO updateAlbum(Long id, AlbumDTO albumDTO) {
         Optional<Album> optionalAlbum = albumRepository.findById(id);
         if (optionalAlbum.isEmpty()) {
+            //todo change to custom exception
             throw new IllegalArgumentException("Album not found");
         }
 
         Album album = optionalAlbum.get();
-        // Update fields
         album.setTitle(albumDTO.getTitle());
         album.setYear(albumDTO.getYear());
 
@@ -110,6 +119,9 @@ public class AlbumService {
             Album album = optionalAlbum.get();
             album.addArtist(artist);
             albumRepository.save(album);
+        } else {
+            //todo change to custom exception
+            throw new IllegalArgumentException("Album not found");
         }
     }
 
@@ -119,6 +131,37 @@ public class AlbumService {
             Album album = optionalAlbum.get();
             album.removeArtist(artist);
             albumRepository.save(album);
+        } else {
+            //todo change to custom exception
+            throw new IllegalArgumentException("Album not found");
+        }
+    }
+
+    public void addSongToAlbum(Long albumId, Song song) {
+        Optional<Album> optionalAlbum = albumRepository.findById(albumId);
+        if (optionalAlbum.isPresent()) {
+            Album album = optionalAlbum.get();
+            album.addSong(song);
+            song.setAlbum(album);
+            albumRepository.save(album);
+            songRepo.save(song);
+        } else {
+            //todo change to custom exception
+            throw new IllegalArgumentException("Album not found");
+        }
+    }
+
+    public void removeSongFromAlbum(Long albumId, Song song) {
+        Optional<Album> optionalAlbum = albumRepository.findById(albumId);
+        if (optionalAlbum.isPresent()) {
+            Album album = optionalAlbum.get();
+            album.removeSong(song);
+            song.setAlbum(null);
+            albumRepository.save(album);
+            songRepo.save(song);
+        } else {
+            //todo change to custom exception
+            throw new IllegalArgumentException("Album not found");
         }
     }
 }

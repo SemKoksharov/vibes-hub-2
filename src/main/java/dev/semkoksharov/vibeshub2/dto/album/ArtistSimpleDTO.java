@@ -1,4 +1,4 @@
-package dev.semkoksharov.vibeshub2.dto;
+package dev.semkoksharov.vibeshub2.dto.album;
 
 public class ArtistSimpleDTO {
     private Long id;

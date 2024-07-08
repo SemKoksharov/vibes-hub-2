@@ -1,6 +1,6 @@
 package dev.semkoksharov.vibeshub2.service;
 
-import dev.semkoksharov.vibeshub2.dto.AlbumSimpleDTO;
+import dev.semkoksharov.vibeshub2.dto.album.AlbumSimpleDTO;
 import dev.semkoksharov.vibeshub2.dto.SongSimpleDTO;
 import dev.semkoksharov.vibeshub2.dto.user.*;
 import dev.semkoksharov.vibeshub2.model.*;
