@@ -1,18 +1,23 @@
 package dev.semkoksharov.vibeshub2.dto.user;
+import dev.semkoksharov.vibeshub2.dto.AlbumSimpleDTO;
+import dev.semkoksharov.vibeshub2.dto.SongSimpleDTO;
+
+import java.util.Set;
 
 public class ArtistDTO {
-
-    private Long userId;
-    private String artistName;
+    private Long id;
     private String description;
+    private String artistName;
+    private Set<AlbumSimpleDTO> albums;
+    private Set<SongSimpleDTO> songs;
 
-    public ArtistDTO() {
+    // Getters and setters
+    public Long getId() {
+        return id;
     }
 
-    public ArtistDTO(Long userId, String artistName, String description) {
-        this.userId = userId;
-        this.artistName = artistName;
-        this.description = description;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getDescription() {
@@ -23,19 +28,27 @@ public class ArtistDTO {
         this.description = description;
     }
 
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
     public String getArtistName() {
         return artistName;
     }
 
     public void setArtistName(String artistName) {
         this.artistName = artistName;
+    }
+
+    public Set<AlbumSimpleDTO> getAlbums() {
+        return albums;
+    }
+
+    public void setAlbums(Set<AlbumSimpleDTO> albums) {
+        this.albums = albums;
+    }
+
+    public Set<SongSimpleDTO> getSongs() {
+        return songs;
+    }
+
+    public void setSongs(Set<SongSimpleDTO> songs) {
+        this.songs = songs;
     }
 }

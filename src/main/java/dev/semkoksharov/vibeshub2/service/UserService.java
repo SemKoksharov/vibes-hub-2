@@ -1,20 +1,21 @@
 package dev.semkoksharov.vibeshub2.service;
 
+import dev.semkoksharov.vibeshub2.dto.AlbumSimpleDTO;
+import dev.semkoksharov.vibeshub2.dto.SongSimpleDTO;
 import dev.semkoksharov.vibeshub2.dto.user.*;
 import dev.semkoksharov.vibeshub2.model.*;
 import dev.semkoksharov.vibeshub2.repository.AdvertiserDetailsRepo;
 import dev.semkoksharov.vibeshub2.repository.ArtistDetailsRepo;
 import dev.semkoksharov.vibeshub2.repository.UserRepo;
-
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService implements UserServiceInt {
@@ -51,14 +52,14 @@ public class UserService implements UserServiceInt {
     @Transactional
     @Override
     public UserResponseDTO createArtistIfUserHasRole(ArtistDTO artistDTO) {
-        UserEntity user = userRepo.findById(artistDTO.getUserId())
+        UserEntity user = userRepo.findById(artistDTO.getId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (user.getUserRoles().contains(UserRoles.ARTIST)) {
             Artist artist = new Artist(user, artistDTO.getDescription(), artistDTO.getArtistName(), Set.of(), Set.of());
             var saved = artistDetailsRepo.save(artist);
             var dto = modelMapper.map(user, UserWithRoleDetailsDTO.class);
-            dto.setRoleDetails(saved);
+            dto.setRoleDetails(mapToArtistDTO(saved));
 
             return dto;
         }
@@ -94,11 +95,15 @@ public class UserService implements UserServiceInt {
             }
             UserWithRoleDetailsDTO dto = modelMapper.map(user, UserWithRoleDetailsDTO.class);
             dto.setRoleDetails(roleDetails);
+
+            if (roleDetails instanceof Artist) {
+                dto.setRoleDetails(mapToArtistDTO((Artist) roleDetails));
+            }
+
             return dto;
 
         }).toList();
     }
-
 
     @Override
     public UserResponseDTO findUserById(Long userID) {
@@ -110,12 +115,16 @@ public class UserService implements UserServiceInt {
         }
         UserWithRoleDetailsDTO dto = modelMapper.map(user, UserWithRoleDetailsDTO.class);
         dto.setRoleDetails(roleDetails);
+
+        if (roleDetails instanceof Artist) {
+            dto.setRoleDetails(mapToArtistDTO((Artist) roleDetails));
+        }
+
         return dto;
     }
 
     @Override
     public UserResponseDTO findUserByUsername(String username) {
-
         return null;
     }
 
@@ -138,16 +147,26 @@ public class UserService implements UserServiceInt {
         userRepo.deleteAll();
     }
 
-
-
     private RoleDetails findRoleDetails(UserEntity userEntity) {
-
         if (userEntity.getUserRoles().contains(UserRoles.ARTIST)) {
             return artistDetailsRepo.findByUser_Id(userEntity.getId()).orElse(null);
-
         } else if (userEntity.getUserRoles().contains(UserRoles.ADVERTISER)) {
             return advertiserDetailsRepo.findById(userEntity.getId()).orElse(null);
         } else return null;
     }
 
+    private ArtistDTO mapToArtistDTO(Artist artist) {
+        ArtistDTO dto = modelMapper.map(artist, ArtistDTO.class);
+        Set<AlbumSimpleDTO> albumDTOs = artist.getAlbums().stream()
+                .map(album -> modelMapper.map(album, AlbumSimpleDTO.class))
+                .collect(Collectors.toSet());
+        dto.setAlbums(albumDTOs);
+
+        Set<SongSimpleDTO> songDTOs = artist.getSongs().stream()
+                .map(song -> modelMapper.map(song, SongSimpleDTO.class))
+                .collect(Collectors.toSet());
+        dto.setSongs(songDTOs);
+
+        return dto;
+    }
 }

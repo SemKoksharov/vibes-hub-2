@@ -14,17 +14,17 @@ public class Album extends BaseEntity {
     private int year;
 
     @ManyToMany(fetch = FetchType.LAZY)
-    private Set<Artist> artist;
+    private Set<Artist> artists;
 
     public Album() {
     }
 
-    public Album(String title, String coverPhotoUrl, String minioCoverPath, int year, Set<Artist> artist) {
+    public Album(String title, String coverPhotoUrl, String minioCoverPath, int year, Set<Artist> artists) {
         this.title = title;
         this.coverPhotoUrl = coverPhotoUrl;
         this.minioCoverPath = minioCoverPath;
         this.year = year;
-        this.artist = artist;
+        this.artists = artists;
     }
 
     public String getTitle() {
@@ -59,11 +59,19 @@ public class Album extends BaseEntity {
         this.year = year;
     }
 
-    public Set<Artist> getArtist() {
-        return artist;
+    public Set<Artist> getArtists() {
+        return artists;
     }
 
-    public void setArtist(Set<Artist> artist) {
-        this.artist = artist;
+    public void setArtists(Set<Artist> artist) {
+        this.artists = artist;
+    }
+
+    public void addArtist(Artist artist) {
+        this.artists.add(artist);
+    }
+
+    public void removeArtist(Artist artist) {
+        this.artists.remove(artist);
     }
 }
