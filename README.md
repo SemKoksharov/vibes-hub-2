@@ -19,7 +19,8 @@ I'm currently working on the backend part of the project.
 - Maven
 - JPA (Hibernate)
 - MySQL
-- MinIO(as blob storage)
+- MinIO (as blob storage)
+- Spring Security + JWT (Authentication)
 
 ## Installation 
 
@@ -36,10 +37,13 @@ Make your changes and commit them (git commit -m 'Add feature') 💡
 Push your changes to your branch (git push origin feature/branch-name) 🚀
 Create a Pull Request 📬
 
-## 📧 Contact me 
-💼 LinkedIn: [SemKoksharov](https://www.linkedin.com/in/semkoksharov/) 
-📦 GitHub: [SemKoksharov](https://github.com/SemKoksharov/) 
-📧 Email: [kokshse196@proton.me](mailto:kokshse196@proton.me)
+## 📫 Contact Me
+
+- 📱 +39 320 269 63 23
+- 📍 10144 Torino, Italy
+- 📧 [kokshse196@proton.me](mailto:kokshse196@proton.me)
+- 📦 [GitHub](https://github.com/SemKoksharov)
+- 💼 [LinkedIn](https://www.linkedin.com/in/SemKoksharov)
 
 
 ⭐️ Thank you for your attention! Don't forget to star the repository! ⭐️
