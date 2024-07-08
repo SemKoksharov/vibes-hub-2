@@ -22,7 +22,6 @@ I'm currently working on the backend part of the project.
 - MinIO (as blob storage)
 - Spring Security + JWT (Authentication)
 
-## Installation 
 
 - Clone the repository🚀 :
    ```bash
