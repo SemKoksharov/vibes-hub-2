@@ -1,6 +1,7 @@
-package dev.semkoksharov.vibeshub2.model;
+package dev.semkoksharov.vibeshub2.model.base;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import dev.semkoksharov.vibeshub2.model.UserEntity;
 import jakarta.persistence.*;
 
 @MappedSuperclass

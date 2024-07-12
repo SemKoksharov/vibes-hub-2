@@ -1,11 +1,17 @@
-package dev.semkoksharov.vibeshub2.model;
+package dev.semkoksharov.vibeshub2.model.base;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @MappedSuperclass
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public abstract class BaseEntity {
 
     @Id
@@ -20,14 +26,14 @@ public abstract class BaseEntity {
     private LocalDateTime updatedAt;
 
     @Column(name = "deleted", columnDefinition = "boolean default false")
-    private boolean deleted;
+    private boolean active;
 
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-        this.deleted = false;
+        this.active = true;
     }
 
     @PreUpdate
@@ -59,11 +65,11 @@ public abstract class BaseEntity {
         this.updatedAt = updatedAt;
     }
 
-    public boolean isDeleted() {
-        return deleted;
+    public boolean isActive() {
+        return active;
     }
 
-    public void setDeleted(boolean deleted) {
-        this.deleted = deleted;
+    public void setActive(boolean deleted) {
+        this.active = deleted;
     }
 }

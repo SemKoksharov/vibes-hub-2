@@ -1,7 +1,7 @@
 package dev.semkoksharov.vibeshub2.repository;
 
 import dev.semkoksharov.vibeshub2.model.Artist;
-import dev.semkoksharov.vibeshub2.model.RoleDetails;
+import dev.semkoksharov.vibeshub2.model.base.RoleDetails;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

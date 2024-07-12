@@ -1,5 +1,7 @@
 package dev.semkoksharov.vibeshub2.dto.album;
 
+import dev.semkoksharov.vibeshub2.dto.user.ArtistSimpleDTO;
+
 import java.util.Set;
 
 public class AlbumResponseDTO {

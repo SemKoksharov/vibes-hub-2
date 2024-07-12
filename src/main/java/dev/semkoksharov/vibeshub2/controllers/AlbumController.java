@@ -2,7 +2,7 @@ package dev.semkoksharov.vibeshub2.controllers;
 
 import dev.semkoksharov.vibeshub2.dto.album.AlbumDTO;
 import dev.semkoksharov.vibeshub2.dto.album.AlbumResponseDTO;
-import dev.semkoksharov.vibeshub2.service.AlbumService;
+import dev.semkoksharov.vibeshub2.service.implementations.AlbumService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,5 +31,4 @@ public class AlbumController {
         return ResponseEntity.ok(album);
     }
 
-    // Добавим другие методы контроллера в зависимости от необходимости (например, получение всех альбомов, обновление и удаление)
 }

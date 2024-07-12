@@ -2,7 +2,7 @@ package dev.semkoksharov.vibeshub2.authentication;
 
 import dev.semkoksharov.vibeshub2.repository.UserRepo;
 import dev.semkoksharov.vibeshub2.model.UserEntity;
-import dev.semkoksharov.vibeshub2.model.UserRoles;
+import dev.semkoksharov.vibeshub2.model.enums.UserRoles;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;

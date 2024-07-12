@@ -1,6 +1,8 @@
 package dev.semkoksharov.vibeshub2.model;
 
+import dev.semkoksharov.vibeshub2.model.base.RoleDetails;
 import jakarta.persistence.*;
+import org.checkerframework.checker.units.qual.A;
 
 import java.util.Set;
 
@@ -54,6 +56,14 @@ public class Artist extends RoleDetails {
 
     public void setAlbums(Set<Album> albums) {
         this.albums = albums;
+    }
+
+    public void addAlbum(Album album){
+        this.albums.add(album);
+    }
+
+    public void removeAlbum(Album album){
+        this.albums.remove(album);
     }
 }
 

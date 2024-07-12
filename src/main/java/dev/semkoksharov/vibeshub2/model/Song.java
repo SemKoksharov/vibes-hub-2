@@ -1,7 +1,16 @@
 package dev.semkoksharov.vibeshub2.model;
 
+import dev.semkoksharov.vibeshub2.model.base.BaseEntity;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
+@EqualsAndHashCode(callSuper = true)
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @Table(name = "songs")
 public class Song extends BaseEntity {
@@ -19,63 +28,4 @@ public class Song extends BaseEntity {
     @JoinColumn(name = "album_id")
     private Album album;
 
-    public Song() {}
-
-    public Song(Genre genre, int duration, String title, String url, String minioPath, Album album) {
-        this.genre = genre;
-        this.duration = duration;
-        this.title = title;
-        this.url = url;
-        this.minioPath = minioPath;
-        this.album = album;
-    }
-
-    // Getters and Setters
-    public Genre getGenre() {
-        return genre;
-    }
-
-    public void setGenre(Genre genre) {
-        this.genre = genre;
-    }
-
-    public int getDuration() {
-        return duration;
-    }
-
-    public void setDuration(int duration) {
-        this.duration = duration;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public String getMinioPath() {
-        return minioPath;
-    }
-
-    public void setMinioPath(String minioPath) {
-        this.minioPath = minioPath;
-    }
-
-    public Album getAlbum() {
-        return album;
-    }
-
-    public void setAlbum(Album album) {
-        this.album = album;
-    }
 }

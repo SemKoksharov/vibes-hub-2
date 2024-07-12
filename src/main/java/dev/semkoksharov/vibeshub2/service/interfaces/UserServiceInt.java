@@ -1,9 +1,6 @@
-package dev.semkoksharov.vibeshub2.service;
+package dev.semkoksharov.vibeshub2.service.interfaces;
 
-import dev.semkoksharov.vibeshub2.dto.user.AdvertiserDTO;
-import dev.semkoksharov.vibeshub2.dto.user.ArtistDTO;
-import dev.semkoksharov.vibeshub2.dto.user.UserRegistrationDTO;
-import dev.semkoksharov.vibeshub2.dto.user.UserResponseDTO;
+import dev.semkoksharov.vibeshub2.dto.user.*;
 import dev.semkoksharov.vibeshub2.model.UserEntity;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +17,12 @@ public interface UserServiceInt {
 
     @Transactional
     UserResponseDTO createAdvertiserIfUserHasRole(AdvertiserDTO advertiserDTO);
+
+    void deleteUserDeteils(Long userID);
+
+    void updateRoleDetails(Long userID, ArtistDTO artistDTO);
+
+    void updateRoleDetails(Long userID, AdvertiserDTO advertiserDTO);
 
     List<UserResponseDTO> findAllUsers();
 

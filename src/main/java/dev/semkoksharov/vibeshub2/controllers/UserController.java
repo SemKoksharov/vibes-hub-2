@@ -1,7 +1,8 @@
 package dev.semkoksharov.vibeshub2.controllers;
 
-import dev.semkoksharov.vibeshub2.service.UserService;
 import dev.semkoksharov.vibeshub2.dto.user.ArtistDTO;
+import dev.semkoksharov.vibeshub2.service.implementations.UserService;
+import dev.semkoksharov.vibeshub2.dto.user.ArtistResponseDTO;
 import dev.semkoksharov.vibeshub2.dto.user.UserResponseDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -27,7 +28,7 @@ public class UserController {
     }
 
     @PostMapping("/details")
-    public ResponseEntity<UserResponseDTO> createDetsils(@RequestBody ArtistDTO artistDTO){
+    public ResponseEntity<UserResponseDTO> createDetails(@RequestBody ArtistDTO artistDTO){
 
         UserResponseDTO user = userService.createArtistIfUserHasRole(artistDTO);
 
