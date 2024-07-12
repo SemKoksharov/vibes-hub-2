@@ -1,5 +1,12 @@
 # 🎶 Vibes Hub 2 🎶
 
+## [Old version (Work of the group, wasn't finished) 😢](https://github.com/develhope/Java24-Team4-Spring)
+Due to the fact that my team of students from "Develhope" decided not to continue. But file storage and music playback are already implemented there. If you're interested, you can take a look.
+
+I started here only recently and try to write a couple of lines in my free time :)
+
+## But here is my version which I continue and practically rewrite :)
+
 ![Java](https://img.shields.io/badge/Java-100%25-brightgreen) 
 
 ## 📜 Description 
