@@ -17,6 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
@@ -96,27 +97,36 @@ public class SongService implements SongServiceInt {
     }
 
     @Override
+    @Transactional
     public SongResponseDTO updateSong(Long id, SongDTO songDTO) {
-        Optional<Song> optionalSong = songRepo.findById(id);
-        if (optionalSong.isEmpty()) {
-            throw new IllegalArgumentException("[Update error] Song with id " + id + " not found");
+
+        Song toUpdate = songRepo.findById(id).orElseThrow(
+                () -> new IllegalArgumentException("[Update error] Song with id " + id + " not found")
+        );
+
+        Album currentAlbum = toUpdate.getAlbum();
+
+        if (songDTO.getAlbumId() != null) {
+            Album newAlbum = albumRepo.findById(songDTO.getAlbumId()).orElseThrow(
+                    () -> new IllegalArgumentException("[Update error] Album with id " + songDTO.getAlbumId() + " not found")
+            );
+
+            if (currentAlbum != null && !currentAlbum.equals(newAlbum)) {
+                currentAlbum.removeSong(toUpdate);
+                albumRepo.saveAndFlush(currentAlbum);
+
+                newAlbum.addSong(toUpdate);
+                albumRepo.saveAndFlush(newAlbum);
+            }
+
         }
 
-        Optional<Album> albumOptional = albumRepo.findById(songDTO.getAlbumId());
-        if (albumOptional.isEmpty()) {
-            throw new IllegalArgumentException("[Update error] Album with id " + songDTO.getAlbumId() + " not found");
+        if (songDTO.getGenreId() != null) {
+            Genre newGenre = genreRepo.findById(songDTO.getGenreId()).orElseThrow(
+                    () -> new IllegalArgumentException("[Update error] Genre with id " + songDTO.getGenreId() + " not found")
+            );
+            toUpdate.setGenre(newGenre);
         }
-        Album album = albumOptional.get();
-
-        Optional<Genre> genreOptional = genreRepo.findById(songDTO.getGenreId());
-        if (genreOptional.isEmpty()) {
-            throw new IllegalArgumentException("[Update error] Genre with id " + songDTO.getGenreId() + " not found");
-        }
-        Genre genre = genreOptional.get();
-
-        Song toUpdate = optionalSong.get();
-        toUpdate.setAlbum(album);
-        toUpdate.setGenre(genre);
 
         try {
             entityUpdater.update(songDTO, toUpdate);
@@ -125,9 +135,11 @@ public class SongService implements SongServiceInt {
                     " Exception message: " + e.getMessage());
         }
 
-        Song updatedSong = songRepo.save(toUpdate);
-        return mapToResponseDTO(updatedSong, album, genre);
+        Song updatedSong = songRepo.saveAndFlush(toUpdate);
+
+        return mapToResponseDTO(updatedSong, toUpdate.getAlbum(), toUpdate.getGenre());
     }
+
 
     private SongResponseDTO mapToResponseDTO(Song song, Album album, Genre genre) {
         SongResponseDTO responseDTO = modelMapper.map(song, SongResponseDTO.class);

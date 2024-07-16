@@ -8,12 +8,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SongDTO {
-    private Long id;
     private Long albumId;
     private Long genreId;
     private String title;
-    private int duration;
+    private Integer duration;
     private String url;
-    private String minioPath;
-
 }

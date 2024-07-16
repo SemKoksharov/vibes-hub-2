@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @MappedSuperclass
 @Data
@@ -39,6 +40,21 @@ public abstract class BaseEntity {
     @PreUpdate
     protected void onUpdate() {
         this.createdAt = LocalDateTime.now();
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || this.getClass() != o.getClass()) return false;
+        BaseEntity that = (BaseEntity) o;
+        return id != null && id.equals(that.id);
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, getClass());
     }
 
     public Long getId() {

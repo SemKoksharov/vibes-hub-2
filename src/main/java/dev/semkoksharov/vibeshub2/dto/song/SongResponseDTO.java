@@ -13,8 +13,8 @@ public class SongResponseDTO {
     private Long id;
     private String title;
     private int duration;
-    private String url;
-    private String minioPath;
+    private String directUrl;
+    private String streamingUrl;
     private AlbumSimpleDTO album;
     private GenreSimpleDTO genre;
 

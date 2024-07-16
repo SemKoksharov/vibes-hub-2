@@ -15,7 +15,6 @@ public class EntityUpdater {
                 if (value == null || (value instanceof String && ((String) value).isBlank())) {
                     continue;
                 }
-
                 String setterName = "set" + sourceMethod.getName().substring(3);
                 Method targetSetter = findMethod(targetMethods, setterName, sourceMethod.getReturnType());
 

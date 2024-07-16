@@ -18,5 +18,9 @@ spring:
         jdbc:
           lob:
             non_contextual_creation: true
-
-
+minio:
+  url: http://127.0.0.1:9000
+  accessKey: FAXgn5Mwf2wJkQI3h8Ox
+  secretKey: niSWvo6oYlg5IYolDWYNXsGAjtZ8AwJ7JDohdMLK
+  musicBucket: music-storage-vh
+  profileDataBucket: profile-data-vh

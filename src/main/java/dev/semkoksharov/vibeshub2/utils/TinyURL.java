@@ -9,7 +9,7 @@ import java.util.Scanner;
 
 public class TinyURL {
 
-    public static  String shortURL(String longUrl) throws IOException{
+    public String shortURL(String longUrl) throws IOException{
         String requestUrl = "http://tinyurl.com/api-create.php?url=" + longUrl;
         HttpURLConnection connection = (HttpURLConnection) new URL(requestUrl).openConnection();
         connection.setRequestMethod(RequestMethod.GET.toString());

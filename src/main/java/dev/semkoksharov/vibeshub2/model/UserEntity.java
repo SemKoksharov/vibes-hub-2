@@ -40,7 +40,7 @@ public class UserEntity extends BaseEntity implements UserDetails {
     private String urlPhoto;
 
     @JsonIgnore
-    private String photoMinioName;
+    private String minioPath;
 
     @Enumerated(value = EnumType.STRING)
     @ElementCollection(targetClass = UserRoles.class, fetch = FetchType.EAGER)

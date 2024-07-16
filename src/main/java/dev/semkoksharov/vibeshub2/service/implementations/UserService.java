@@ -68,6 +68,7 @@ public class UserService implements UserServiceInt {
 
         if (user.getUserRoles().contains(UserRoles.ARTIST)) {
             Artist artist = modelMapper.map(artistDTO, Artist.class);
+            artist.setUser(user);
             artist.setAlbums(Set.of());
             artist.setSongs(Set.of());
             var saved = artistDetailsRepo.saveAndFlush(artist);

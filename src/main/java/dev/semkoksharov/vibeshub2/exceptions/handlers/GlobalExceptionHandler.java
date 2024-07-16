@@ -81,8 +81,8 @@ public class GlobalExceptionHandler {
     }
 
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    @ExceptionHandler(MinIOFileUploadException.class)
-    public ResponseEntity<ErrorResponseForm> handleMinIOFileUploadExceptions(MinIOFileUploadException ex) {
+    @ExceptionHandler(MinIOServiceException.class)
+    public ResponseEntity<ErrorResponseForm> handleMinIOFileUploadExceptions(MinIOServiceException ex) {
         return createErrorResponse(ex, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
@@ -112,8 +112,8 @@ public class GlobalExceptionHandler {
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ExceptionHandler(MultiUploadFailedException.class)
-    public ResponseEntity<ErrorResponseForm> handleMultiUploadFailedException(MultiUploadFailedException ex) {
+    @ExceptionHandler(FilesNotUploadedException.class)
+    public ResponseEntity<ErrorResponseForm> handleMultiUploadFailedException(FilesNotUploadedException ex) {
         return createErrorResponse(ex, HttpStatus.BAD_REQUEST);
 
     }
