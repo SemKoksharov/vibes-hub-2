@@ -11,6 +11,8 @@ import io.minio.RemoveObjectArgs;
 import io.minio.errors.*;
 import io.minio.http.Method;
 import org.apache.commons.io.FilenameUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,13 +24,13 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 
 @Service
 public class MinIOService implements MinIOServiceInt {
 
     private final MinioClient minioClient;
     private final TinyURL tinyURL;
+    private static final Logger LOGGER = LoggerFactory.getLogger(MinIOService.class);
 
     @Autowired
     public MinIOService(MinioClient minioClient, TinyURL tinyURL) {
@@ -36,10 +38,8 @@ public class MinIOService implements MinIOServiceInt {
         this.tinyURL = tinyURL;
     }
 
-
     @Override
     public Map<String, String> uploadFile(MultipartFile file, String newFileName, String destinationFolderName, String bucketName) {
-
         String originalFilename = file.getOriginalFilename();
         String extension = Objects.requireNonNull(FilenameUtils.getExtension(originalFilename)).toLowerCase();
         String minioObjectPath = destinationFolderName + "/" + newFileName + "." + extension;
@@ -50,6 +50,9 @@ public class MinIOService implements MinIOServiceInt {
 
         Map<String, String> newObject = new HashMap<>();
         try {
+            LOGGER.debug("Uploading file with original filename: {}", originalFilename);
+            LOGGER.debug("Content type: {}", contentType);
+
             fileInputStream = file.getInputStream();
 
             minioClient.putObject(PutObjectArgs.builder()
@@ -59,28 +62,27 @@ public class MinIOService implements MinIOServiceInt {
                     .contentType(contentType)
                     .build());
 
+            LOGGER.info("File uploaded successfully: {}", minioObjectPath);
             return new HashMap<>(Map.of(originalFilename, minioObjectPath));
 
         } catch (ErrorResponseException | InsufficientDataException | InternalException | InvalidKeyException |
                  InvalidResponseException | NoSuchAlgorithmException | ServerException | XmlParserException |
                  IOException e) {
-
-            throw new MinIOServiceException("[File upload error] " + e.getMessage()+ " Caused by: " + e.getClass().getCanonicalName());
+            LOGGER.error("[File upload error] {}", e.getMessage(), e);
+            throw new MinIOServiceException("[File upload error] " + e.getMessage() + " Caused by: " + e.getClass().getCanonicalName());
 
         } finally {
             if (fileInputStream != null) {
                 try {
                     fileInputStream.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LOGGER.error("Error closing file input stream", e);
                 }
             }
         }
     }
 
-    // if isTemporary = true URL expires in 10 hours
-    // if isShort = true you will get a short link using https://tinyurl.com/
-    private String getTempUrl(String bucketName, String minioObjectPath, boolean isTemporary, boolean isShort) {
+    private String getUrl(String bucketName, String minioObjectPath, boolean isTemporary, boolean isShort) {
         String objectUrl;
         try {
             if (isTemporary) {
@@ -101,9 +103,11 @@ public class MinIOService implements MinIOServiceInt {
                                 .build()
                 );
             }
+            LOGGER.debug("Generated URL: {}", objectUrl);
         } catch (ErrorResponseException | ServerException | XmlParserException | NoSuchAlgorithmException |
                  IOException | InvalidResponseException | InvalidKeyException | InternalException |
                  InsufficientDataException e) {
+            LOGGER.error("[Error getting URL] {}", e.getMessage(), e);
             throw new MinIOServiceException("[Error getting URL] Caused by: " +
                     e.getClass().getSimpleName() + " Ex. Message:" + e.getMessage());
         }
@@ -111,6 +115,7 @@ public class MinIOService implements MinIOServiceInt {
         try {
             return isShort ? tinyURL.shortURL(objectUrl) : objectUrl;
         } catch (IOException e) {
+            LOGGER.error("[TinyURL service error] {}", e.getMessage(), e);
             throw new UrlShorterException(
                     "[TinyURL service error] Try again with isShort = false, Caused by: " +
                             e.getClass().getSimpleName() + "Ex. Message: " + e.getMessage()
@@ -128,14 +133,14 @@ public class MinIOService implements MinIOServiceInt {
                     .object(objectName)
                     .build());
             deleted = true;
+            LOGGER.info("File deleted successfully: {}", objectName);
         } catch (ErrorResponseException | InsufficientDataException | InternalException | InvalidKeyException |
                  InvalidResponseException | IOException | NoSuchAlgorithmException | ServerException |
                  XmlParserException e) {
-
+            LOGGER.error("[File delete error] {}", e.getMessage(), e);
             throw new MinIOServiceException("[File delete error] Caused by: " +
                     e.getClass().getSimpleName() + " Ex. Message:" + e.getMessage());
         }
         return deleted;
     }
-
 }

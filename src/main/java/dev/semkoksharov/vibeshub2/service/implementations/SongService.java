@@ -13,14 +13,15 @@ import dev.semkoksharov.vibeshub2.repository.GenreRepo;
 import dev.semkoksharov.vibeshub2.repository.SongRepo;
 import dev.semkoksharov.vibeshub2.service.interfaces.SongServiceInt;
 import dev.semkoksharov.vibeshub2.utils.EntityUpdater;
-import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -32,14 +33,16 @@ public class SongService implements SongServiceInt {
     private final GenreRepo genreRepo;
     private final ModelMapper modelMapper;
     private final EntityUpdater entityUpdater;
+    private final FileService fileService;
 
     @Autowired
-    public SongService(SongRepo songRepo, AlbumRepo albumRepo, GenreRepo genreRepo, ModelMapper modelMapper, EntityUpdater entityUpdater) {
+    public SongService(SongRepo songRepo, AlbumRepo albumRepo, GenreRepo genreRepo, ModelMapper modelMapper, EntityUpdater entityUpdater, FileService fileService) {
         this.songRepo = songRepo;
         this.albumRepo = albumRepo;
         this.genreRepo = genreRepo;
         this.modelMapper = modelMapper;
         this.entityUpdater = entityUpdater;
+        this.fileService = fileService;
     }
 
     @Override
@@ -140,6 +143,12 @@ public class SongService implements SongServiceInt {
         return mapToResponseDTO(updatedSong, toUpdate.getAlbum(), toUpdate.getGenre());
     }
 
+    @Override
+    public Map<String, String> uploadAudio(List<MultipartFile> files, List<Long> ids) {
+        // todo add business logic to process and correctly assign the song object in the database to the audio file
+       return fileService.multiUploadFiles(files, ids, FileService.FileType.AUDIO);
+    }
+
 
     private SongResponseDTO mapToResponseDTO(Song song, Album album, Genre genre) {
         SongResponseDTO responseDTO = modelMapper.map(song, SongResponseDTO.class);
@@ -147,4 +156,6 @@ public class SongService implements SongServiceInt {
         responseDTO.setGenre(modelMapper.map(genre, GenreSimpleDTO.class));
         return responseDTO;
     }
+
+
 }

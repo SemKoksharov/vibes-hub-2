@@ -4,6 +4,7 @@ import dev.semkoksharov.vibeshub2.exceptions.FilesNotUploadedException;
 import dev.semkoksharov.vibeshub2.exceptions.MinIOServiceException;
 import dev.semkoksharov.vibeshub2.interfaces.Uploadable;
 import dev.semkoksharov.vibeshub2.model.Album;
+import dev.semkoksharov.vibeshub2.model.Artist;
 import dev.semkoksharov.vibeshub2.model.Song;
 import dev.semkoksharov.vibeshub2.model.UserEntity;
 import dev.semkoksharov.vibeshub2.repository.AlbumRepo;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class FileService  {
@@ -135,13 +137,16 @@ public class FileService  {
                         () -> new IllegalArgumentException("[Upload error] Song with id " + id + " is not found in the database")
                 );
                 Album album = song.getAlbum();
-                yield album.getYear() + "_" + album.getArtists() + "_" + album.getTitle();
+                String artistNames = album.getArtists().stream().map(Artist::getArtistName).collect(Collectors.joining("-","[", "]"));
+                yield album.getYear() + "_" +artistNames + "_" + album.getTitle();
             }
             case ALBUM_COVER -> {
                 Album album = albumRepo.findById(id).orElseThrow(
                         () -> new IllegalArgumentException("[Upload error] Album with id " + id + " is not found in the database")
                 );
-                yield album.getYear() + "_" + album.getArtists() + "_" + album.getTitle();
+                String artistNames = album.getArtists().stream().map(Artist::getArtistName).collect(Collectors.joining("-","[", "]"));
+
+                yield album.getYear() + "_" + artistNames + "_" + album.getTitle();
             }
             case PROFILE_PICTURE -> {
                 userRepo.findById(id).orElseThrow(

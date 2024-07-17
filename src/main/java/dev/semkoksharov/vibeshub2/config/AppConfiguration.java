@@ -1,9 +1,5 @@
 package dev.semkoksharov.vibeshub2.config;
 
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dev.semkoksharov.vibeshub2.dto.song.SongDTO;
 import dev.semkoksharov.vibeshub2.model.Song;
 import dev.semkoksharov.vibeshub2.utils.EntityUpdater;
@@ -14,6 +10,8 @@ import org.modelmapper.PropertyMap;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class AppConfiguration {
@@ -57,4 +55,8 @@ public class AppConfiguration {
     public TinyURL tinyURL(){
         return new TinyURL();
     }
+
+
+
+
 }

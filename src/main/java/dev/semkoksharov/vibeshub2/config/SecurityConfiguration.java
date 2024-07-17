@@ -35,7 +35,7 @@ public class SecurityConfiguration {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(registry -> {
-                    registry.requestMatchers("/signup/**", "/login/**", "/**").permitAll();
+                    registry.requestMatchers("/signup/**", "/login/**", "/**","/api/songs/upload").permitAll();
 //                    registry.requestMatchers("/api/home/admin/**").hasRole("ADMIN");
 //                    registry.requestMatchers("/api/home/user/**").hasRole("USER");
                     registry.anyRequest().authenticated();
