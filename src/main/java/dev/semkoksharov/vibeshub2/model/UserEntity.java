@@ -1,6 +1,7 @@
 package dev.semkoksharov.vibeshub2.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import dev.semkoksharov.vibeshub2.interfaces.Uploadable;
 import dev.semkoksharov.vibeshub2.model.base.BaseEntity;
 import dev.semkoksharov.vibeshub2.model.enums.UserRoles;
 import jakarta.persistence.*;
@@ -21,7 +22,7 @@ import java.util.Set;
 @NoArgsConstructor
 @Entity
 @Table(name = "users")
-public class UserEntity extends BaseEntity implements UserDetails {
+public class UserEntity extends BaseEntity implements UserDetails, Uploadable {
 
     private String name;
     private String surname;

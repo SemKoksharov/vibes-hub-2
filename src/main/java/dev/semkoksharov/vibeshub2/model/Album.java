@@ -18,7 +18,7 @@ import java.util.Set;
 @NoArgsConstructor
 @Entity
 @Table(name = "albums")
-public class Album extends BaseEntity  {
+public class Album extends BaseEntity implements Uploadable {
 
     private String title;
     private String coverImage;

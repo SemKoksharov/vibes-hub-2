@@ -20,7 +20,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class FileService  {
+public class FileService {
 
     private final MinIOService minIOService;
     private final SongRepo songRepo;
@@ -47,35 +47,35 @@ public class FileService  {
         AUDIO, ALBUM_COVER, PROFILE_PICTURE
     }
 
-    public Map<String, String> uploadFile(MultipartFile file, Long id, FileType fileType) {
-        return multiUploadFiles(List.of(file), List.of(id), fileType);
-    }
+    public Map<String, String> uploadFile(MultipartFile file, Uploadable entity, FileType fileType) {
 
-    public Map<String, String> deleteFile(Long id, FileType fileType) {
-        return multiDeleteFiles(List.of(id), fileType);
-    }
-
-    public Map<String, String> multiUploadFiles(List<MultipartFile> files, List<Long> ids, FileType fileType) {
-        if (files.size() != ids.size()) {
-            throw new FilesNotUploadedException(
-                    "[Upload failed] The number of file(s) does not correspond to the number of identifiers! Files cannot be uploaded."
-            );
+        String originalFilename = file.getOriginalFilename();
+        Map<String, String> uploadResult = new HashMap<>();
+        Map<String, String> errors = new HashMap<>();
+        try {
+           uploadResult.putAll(multiUploadFiles(List.of(file), List.of(entity), fileType));
+        } catch (FilesNotUploadedException e) {
+          uploadResult.put(originalFilename, "[Upload error]" + e.getMessage());
         }
+
+        return uploadResult;
+    }
+
+    public Map<String, String> deleteFile(Uploadable entity, FileType fileType) {
+        return multiDeleteFiles(List.of(entity), fileType);
+    }
+
+    public Map<String, String> multiUploadFiles(List<MultipartFile> files, List<Uploadable> entities, FileType fileType) {
 
         Map<String, String> errors = new HashMap<>();
         List<String> destinationFolderNames = new ArrayList<>();
         String bucketName = determineBucket(fileType);
 
         for (int i = 0; i < files.size(); i++) {
-            Long id = ids.get(i);
+            Uploadable entity = entities.get(i);
             MultipartFile file = files.get(i);
             String originalFilename = file.getOriginalFilename();
             String extension = Objects.requireNonNull(FilenameUtils.getExtension(originalFilename)).toLowerCase();
-
-            if (id < 0) {
-                errors.put(originalFilename, "[Upload error] current value of id < 0 (" + id + ")");
-                continue;
-            }
 
             if (!isValidExtension(extension, fileType)) {
                 errors.put(originalFilename, "[Upload error] Unsupported format");
@@ -83,10 +83,10 @@ public class FileService  {
             }
 
             try {
-                String destinationFolderName = determineDestinationFolder(id, fileType);
+                String destinationFolderName = determineDestinationFolder(entity, fileType);
                 destinationFolderNames.add(destinationFolderName);
             } catch (Exception e) {
-                errors.put(originalFilename, e.getMessage());
+                errors.put(originalFilename, "[Upload error] " + e.getMessage());
             }
         }
 
@@ -95,22 +95,17 @@ public class FileService  {
         return uploadResultMap;
     }
 
-    public Map<String, String> multiDeleteFiles(List<Long> ids, FileType fileType) {
+    public Map<String, String> multiDeleteFiles(List<Uploadable> entities, FileType fileType) {
         Map<String, String> errors = new HashMap<>();
         List<String> objectNames = new ArrayList<>();
         String bucketName = determineBucket(fileType);
 
-        for (Long id : ids) {
-            if (id < 0) {
-                errors.put(id.toString(), "[Delete error] current value of id < 0 (" + id + ")");
-                continue;
-            }
-
+        for (Uploadable entity : entities) {
             try {
-                String objectPath = determineObjectPath(id, fileType);
+                String objectPath = determineObjectPath(entity, fileType);
                 objectNames.add(objectPath);
             } catch (Exception e) {
-                errors.put(id.toString(), e.getMessage());
+                errors.put(entity.getId().toString(), "[Delete error] " + e.getMessage());
             }
         }
 
@@ -130,52 +125,39 @@ public class FileService  {
         };
     }
 
-    private String determineDestinationFolder(Long id, FileType fileType) {
+    private String determineDestinationFolder(Uploadable entity, FileType fileType) {
         return switch (fileType) {
             case AUDIO -> {
-                Song song = songRepo.findById(id).orElseThrow(
-                        () -> new IllegalArgumentException("[Upload error] Song with id " + id + " is not found in the database")
-                );
+                Song song = (Song) entity;
                 Album album = song.getAlbum();
-                String artistNames = album.getArtists().stream().map(Artist::getArtistName).collect(Collectors.joining("-","[", "]"));
-                yield album.getYear() + "_" +artistNames + "_" + album.getTitle();
+                String artistNames = album.getArtists().stream().map(Artist::getArtistName).collect(Collectors.joining("-", "[", "]"));
+                yield album.getYear() + "_" + artistNames + "_" + album.getTitle();
             }
             case ALBUM_COVER -> {
-                Album album = albumRepo.findById(id).orElseThrow(
-                        () -> new IllegalArgumentException("[Upload error] Album with id " + id + " is not found in the database")
-                );
-                String artistNames = album.getArtists().stream().map(Artist::getArtistName).collect(Collectors.joining("-","[", "]"));
-
+                Album album = (Album) entity;
+                String artistNames = album.getArtists().stream().map(Artist::getArtistName).collect(Collectors.joining("-"));
                 yield album.getYear() + "_" + artistNames + "_" + album.getTitle();
             }
             case PROFILE_PICTURE -> {
-                userRepo.findById(id).orElseThrow(
-                        () -> new IllegalArgumentException("[Upload error] User with id " + id + " is not found in the database")
-                );
-                yield "user_" + id + "_profileData";
+                UserEntity user = (UserEntity) entity;
+                yield "user_" + user.getId() + "_profileData";
             }
         };
     }
 
-    private String determineObjectPath(Long id, FileType fileType) {
+    private String determineObjectPath(Uploadable entity, FileType fileType) {
         return switch (fileType) {
             case AUDIO -> {
-                Song song = songRepo.findById(id).orElseThrow(
-                        () -> new IllegalArgumentException("[Delete error] Song with id " + id + " is not found in the database")
-                );
-                yield  song.getMinioPath();
+                Song song = (Song) entity;
+                yield song.getMinioPath();
             }
             case ALBUM_COVER -> {
-                Album album = albumRepo.findById(id).orElseThrow(
-                        () -> new IllegalArgumentException("[Delete error] Album with id " + id + " is not found in the database")
-                );
-                yield  album.getMinioPath();
+                Album album = (Album) entity;
+                yield album.getMinioPath();
             }
             case PROFILE_PICTURE -> {
-                UserEntity user = userRepo.findById(id).orElseThrow(
-                        () -> new IllegalArgumentException("[Delete error] User with id " + id + " is not found in the database")
-                );
-                yield  user.getMinioPath();
+                UserEntity user = (UserEntity) entity;
+                yield user.getMinioPath();
             }
         };
     }
@@ -191,7 +173,7 @@ public class FileService  {
                 Map<String, String> uploadResult = minIOService.uploadFile(file, newFileName, destinationFolderNames.get(i), bucketName);
                 resultMap.put(originalFilename, uploadResult.get(originalFilename));
             } catch (MinIOServiceException e) {
-                resultMap.put(originalFilename, e.getMessage());
+                resultMap.put(originalFilename, "[Upload error] " + e.getMessage());
             }
         }
         return resultMap;
@@ -202,9 +184,9 @@ public class FileService  {
         for (String name : objectNames) {
             try {
                 minIOService.deleteFile(bucketName, name);
-                delResult.put(name, "File deleted.");
+                delResult.put(name, "[Success] file deleted");
             } catch (MinIOServiceException e) {
-                delResult.put(name, e.getMessage());
+                delResult.put(name, "[Upload error] " + e.getMessage());
             }
         }
         return delResult;

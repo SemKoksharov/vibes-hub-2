@@ -5,6 +5,8 @@ import dev.semkoksharov.vibeshub2.dto.genre.GenreSimpleDTO;
 import dev.semkoksharov.vibeshub2.dto.song.SongDTO;
 import dev.semkoksharov.vibeshub2.dto.song.SongResponseDTO;
 import dev.semkoksharov.vibeshub2.exceptions.EntityUpdaterException;
+import dev.semkoksharov.vibeshub2.exceptions.FilesNotUploadedException;
+import dev.semkoksharov.vibeshub2.interfaces.Uploadable;
 import dev.semkoksharov.vibeshub2.model.Album;
 import dev.semkoksharov.vibeshub2.model.Genre;
 import dev.semkoksharov.vibeshub2.model.Song;
@@ -20,9 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -145,8 +145,43 @@ public class SongService implements SongServiceInt {
 
     @Override
     public Map<String, String> uploadAudio(List<MultipartFile> files, List<Long> ids) {
-        // todo add business logic to process and correctly assign the song object in the database to the audio file
-       return fileService.multiUploadFiles(files, ids, FileService.FileType.AUDIO);
+        Map<String, String> uploadResult = new HashMap<>();
+        List<Uploadable> entities = new ArrayList<>();
+        List<String> filenames = files.stream().map(MultipartFile::getOriginalFilename).toList();
+
+        if (files.size() != ids.size()) {
+            throw new FilesNotUploadedException(
+                    "[Upload error] The number of file(s) does not correspond to the number of identifiers! Files cannot be uploaded."
+            );
+        }
+
+        for (int i = 0; i < files.size(); i++) {
+            Long songId = ids.get(i);
+            String filename = filenames.get(i);
+            Optional<Song> songOptional = songRepo.findById(songId);
+
+            if (songOptional.isEmpty()) {
+                uploadResult.put(filename, "[Upload error] Song entity with id " + songId + " is not found in the database");
+            } else {
+                entities.add(songOptional.get());
+            }
+        }
+
+        Map<String, String> uploadFilesResult = fileService.multiUploadFiles(files, entities, FileService.FileType.AUDIO);
+        uploadResult.putAll(uploadFilesResult);
+
+        for (int i = 0; i < files.size(); i++) {
+            String filename = filenames.get(i);
+            Song song = entities.size() > i ? (Song) entities.get(i) : null;
+
+            if (song != null && uploadFilesResult.containsKey(filename) && !uploadFilesResult.get(filename).startsWith("[Upload error]")) {
+                String minioPath = uploadFilesResult.get(filename);
+                song.setMinioPath(minioPath);
+                songRepo.save(song);
+            }
+        }
+
+        return uploadResult;
     }
 
 
