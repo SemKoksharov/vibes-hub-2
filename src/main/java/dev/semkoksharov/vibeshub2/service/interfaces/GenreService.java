@@ -5,7 +5,7 @@ import dev.semkoksharov.vibeshub2.dto.genre.GenreResponseDTO;
 
 import java.util.List;
 
-public interface GenreServiceInt {
+public interface GenreService {
     GenreResponseDTO createGenre(GenreDTO genreDTO);
 
     GenreResponseDTO getGenreById(Long id);

@@ -20,9 +20,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class FileService {
+public class FileServiceImpl {
 
-    private final MinIOService minIOService;
+    private final MinIOServiceImpl minIOService;
     private final SongRepo songRepo;
     private final AlbumRepo albumRepo;
     private final UserRepo userRepo;
@@ -36,7 +36,7 @@ public class FileService {
     private static final Set<String> IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif");
 
     @Autowired
-    public FileService(MinIOService minIOService, SongRepo songRepo, AlbumRepo albumRepo, UserRepo userRepo) {
+    public FileServiceImpl(MinIOServiceImpl minIOService, SongRepo songRepo, AlbumRepo albumRepo, UserRepo userRepo) {
         this.minIOService = minIOService;
         this.songRepo = songRepo;
         this.albumRepo = albumRepo;
@@ -53,9 +53,9 @@ public class FileService {
         Map<String, String> uploadResult = new HashMap<>();
         Map<String, String> errors = new HashMap<>();
         try {
-           uploadResult.putAll(multiUploadFiles(List.of(file), List.of(entity), fileType));
+            uploadResult.putAll(multiUploadFiles(List.of(file), List.of(entity), fileType));
         } catch (FilesNotUploadedException e) {
-          uploadResult.put(originalFilename, "[Upload error]" + e.getMessage());
+            uploadResult.put(originalFilename, "[Upload error]" + e.getMessage());
         }
 
         return uploadResult;
@@ -114,6 +114,17 @@ public class FileService {
         return resultMap;
     }
 
+    public String getTempUrl(String minioPath, String bucketName, boolean isShort) {
+        return minIOService.getUrl(bucketName, minioPath, true, isShort);
+    }
+    public String getShortUrl(String minioPath, String bucketName) {
+        return minIOService.getUrl(bucketName, minioPath, false, true);
+    }
+
+    public String getDirectUrl(String minioPath, String bucketName) {
+        return minIOService.getUrl(bucketName, minioPath, false, false);
+    }
+
     private String determineBucket(FileType fileType) {
         return fileType == FileType.PROFILE_PICTURE ? profileDataBucket : musicBucket;
     }
@@ -130,17 +141,17 @@ public class FileService {
             case AUDIO -> {
                 Song song = (Song) entity;
                 Album album = song.getAlbum();
-                String artistNames = album.getArtists().stream().map(Artist::getArtistName).collect(Collectors.joining("-", "[", "]"));
+                String artistNames = removeSpaces(album.getArtists().stream().map(Artist::getArtistName).collect(Collectors.joining("-","[", "]")));
                 yield album.getYear() + "_" + artistNames + "_" + album.getTitle();
             }
             case ALBUM_COVER -> {
                 Album album = (Album) entity;
-                String artistNames = album.getArtists().stream().map(Artist::getArtistName).collect(Collectors.joining("-"));
+                String artistNames = removeSpaces(album.getArtists().stream().map(Artist::getArtistName).collect(Collectors.joining("-","[", "]")));
                 yield album.getYear() + "_" + artistNames + "_" + album.getTitle();
             }
             case PROFILE_PICTURE -> {
                 UserEntity user = (UserEntity) entity;
-                yield "user_" + user.getId() + "_profileData";
+                yield "user" + "[" + user.getId() + "]" + user.getUsername() + "_profileData";
             }
         };
     }
@@ -190,5 +201,10 @@ public class FileService {
             }
         }
         return delResult;
+    }
+
+
+    private String removeSpaces(String input) {
+        return input.replace(" ", "");
     }
 }

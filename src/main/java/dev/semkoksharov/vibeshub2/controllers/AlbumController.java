@@ -2,7 +2,8 @@ package dev.semkoksharov.vibeshub2.controllers;
 
 import dev.semkoksharov.vibeshub2.dto.album.AlbumDTO;
 import dev.semkoksharov.vibeshub2.dto.album.AlbumResponseDTO;
-import dev.semkoksharov.vibeshub2.service.implementations.AlbumService;
+import dev.semkoksharov.vibeshub2.service.implementations.AlbumServiceImpl;
+import dev.semkoksharov.vibeshub2.service.interfaces.AlbumService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +16,7 @@ public class AlbumController {
     private final AlbumService albumService;
 
     @Autowired
-    public AlbumController(AlbumService albumService) {
+    public AlbumController(AlbumServiceImpl albumService) {
         this.albumService = albumService;
     }
 

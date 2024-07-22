@@ -12,7 +12,7 @@ import dev.semkoksharov.vibeshub2.model.enums.UserRoles;
 import dev.semkoksharov.vibeshub2.repository.AdvertiserDetailsRepo;
 import dev.semkoksharov.vibeshub2.repository.ArtistDetailsRepo;
 import dev.semkoksharov.vibeshub2.repository.UserRepo;
-import dev.semkoksharov.vibeshub2.service.interfaces.UserServiceInt;
+import dev.semkoksharov.vibeshub2.service.interfaces.UserService;
 import dev.semkoksharov.vibeshub2.utils.EntityUpdater;
 import jakarta.persistence.EntityNotFoundException;
 import org.modelmapper.ModelMapper;
@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-public class UserService implements UserServiceInt {
+public class UserServiceImpl implements UserService {
 
     private final UserRepo userRepo;
     private final PasswordEncoder passwordEncoder;
@@ -38,7 +38,7 @@ public class UserService implements UserServiceInt {
     private final EntityUpdater entityUpdater;
 
     @Autowired
-    public UserService(UserRepo userRepo, PasswordEncoder passwordEncoder, ModelMapper modelMapper, ArtistDetailsRepo artistDetailsRepo, AdvertiserDetailsRepo advertiserDetailsRepo, EntityUpdater entityUpdater) {
+    public UserServiceImpl(UserRepo userRepo, PasswordEncoder passwordEncoder, ModelMapper modelMapper, ArtistDetailsRepo artistDetailsRepo, AdvertiserDetailsRepo advertiserDetailsRepo, EntityUpdater entityUpdater) {
         this.userRepo = userRepo;
         this.passwordEncoder = passwordEncoder;
         this.modelMapper = modelMapper;
@@ -49,12 +49,16 @@ public class UserService implements UserServiceInt {
 
     @Override
     public UserResponseDTO saveUser(UserRegistrationDTO user) {
-        UserEntity newUser = modelMapper.map(user, UserEntity.class);
-        newUser.setPassword(passwordEncoder.encode(user.getPassword()));
+        UserEntity newUser = mapToEntityAndSetPassword(user);
         userRepo.saveAndFlush(newUser);
         return modelMapper.map(newUser, UserResponseDTO.class);
     }
 
+    private UserEntity mapToEntityAndSetPassword(UserRegistrationDTO user) {
+        UserEntity newUser = modelMapper.map(user, UserEntity.class);
+        newUser.setPassword(passwordEncoder.encode(user.getPassword()));
+        return newUser;
+    }
     @Override
     public UserEntity updateUser(Long userID, UserRegistrationDTO user) {
         throw new UnsupportedOperationException("Update user functionality not implemented yet");

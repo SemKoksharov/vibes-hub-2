@@ -2,7 +2,7 @@ package dev.semkoksharov.vibeshub2.service.implementations;
 
 import dev.semkoksharov.vibeshub2.exceptions.MinIOServiceException;
 import dev.semkoksharov.vibeshub2.exceptions.UrlShorterException;
-import dev.semkoksharov.vibeshub2.service.interfaces.MinIOServiceInt;
+import dev.semkoksharov.vibeshub2.service.interfaces.MinIOService;
 import dev.semkoksharov.vibeshub2.utils.TinyURL;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
@@ -26,14 +26,14 @@ import java.util.Map;
 import java.util.Objects;
 
 @Service
-public class MinIOService implements MinIOServiceInt {
+public class MinIOServiceImpl implements MinIOService {
 
     private final MinioClient minioClient;
     private final TinyURL tinyURL;
-    private static final Logger LOGGER = LoggerFactory.getLogger(MinIOService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MinIOServiceImpl.class);
 
     @Autowired
-    public MinIOService(MinioClient minioClient, TinyURL tinyURL) {
+    public MinIOServiceImpl(MinioClient minioClient, TinyURL tinyURL) {
         this.minioClient = minioClient;
         this.tinyURL = tinyURL;
     }
@@ -82,7 +82,8 @@ public class MinIOService implements MinIOServiceInt {
         }
     }
 
-    private String getUrl(String bucketName, String minioObjectPath, boolean isTemporary, boolean isShort) {
+    @Override
+    public String getUrl(String bucketName, String minioObjectPath, boolean isTemporary, boolean isShort) {
         String objectUrl;
         try {
             if (isTemporary) {

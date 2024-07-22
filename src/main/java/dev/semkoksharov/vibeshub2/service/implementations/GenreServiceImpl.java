@@ -5,7 +5,7 @@ import dev.semkoksharov.vibeshub2.dto.genre.GenreResponseDTO;
 import dev.semkoksharov.vibeshub2.exceptions.EntityUpdaterException;
 import dev.semkoksharov.vibeshub2.model.Genre;
 import dev.semkoksharov.vibeshub2.repository.GenreRepo;
-import dev.semkoksharov.vibeshub2.service.interfaces.GenreServiceInt;
+import dev.semkoksharov.vibeshub2.service.interfaces.GenreService;
 import dev.semkoksharov.vibeshub2.utils.EntityUpdater;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,14 +17,14 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-public class GenreService implements GenreServiceInt {
+public class GenreServiceImpl implements GenreService {
 
     private final GenreRepo genreRepo;
     private final ModelMapper modelMapper;
     private final EntityUpdater entityUpdater;
 
     @Autowired
-    public GenreService(GenreRepo genreRepo, ModelMapper modelMapper, EntityUpdater entityUpdater) {
+    public GenreServiceImpl(GenreRepo genreRepo, ModelMapper modelMapper, EntityUpdater entityUpdater) {
         this.genreRepo = genreRepo;
         this.modelMapper = modelMapper;
         this.entityUpdater = entityUpdater;

@@ -26,7 +26,7 @@ public abstract class BaseEntity {
     @JsonFormat(pattern = "dd-MMM-yyyy HH:mm")
     private LocalDateTime updatedAt;
 
-    @Column(name = "deleted", columnDefinition = "boolean default false")
+    @Column(name = "active", columnDefinition = "boolean default true")
     private boolean active;
 
 
@@ -85,7 +85,7 @@ public abstract class BaseEntity {
         return active;
     }
 
-    public void setActive(boolean deleted) {
-        this.active = deleted;
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

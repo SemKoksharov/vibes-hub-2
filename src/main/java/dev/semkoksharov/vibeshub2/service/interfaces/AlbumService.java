@@ -7,7 +7,7 @@ import dev.semkoksharov.vibeshub2.model.Song;
 
 import java.util.List;
 
-public interface AlbumServiceInt {
+public interface AlbumService {
     AlbumResponseDTO createAlbum(AlbumDTO albumDTO);
 
     AlbumResponseDTO getAlbumById(Long id);

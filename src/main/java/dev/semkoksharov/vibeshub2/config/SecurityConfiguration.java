@@ -1,7 +1,7 @@
 package dev.semkoksharov.vibeshub2.config;
 
 import dev.semkoksharov.vibeshub2.authentication.AuthFilterJWT;
-import dev.semkoksharov.vibeshub2.authentication.UzerDetailsService;
+import dev.semkoksharov.vibeshub2.authentication.UserDetService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,12 +22,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfiguration {
 
-    private final UzerDetailsService uzerDetailsService;
+    private final UserDetService userDetailsService;
     private final AuthFilterJWT authFilterJWT;
 
     @Autowired
-    public SecurityConfiguration(UzerDetailsService uzerDetailsService, AuthFilterJWT authFilterJWT) {
-        this.uzerDetailsService = uzerDetailsService;
+    public SecurityConfiguration(UserDetService userDetailsService, AuthFilterJWT authFilterJWT) {
+        this.userDetailsService = userDetailsService;
         this.authFilterJWT = authFilterJWT;
     }
 
@@ -35,7 +35,7 @@ public class SecurityConfiguration {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(registry -> {
-                    registry.requestMatchers("/signup/**", "/login/**", "/**","/api/songs/upload").permitAll();
+                    registry.requestMatchers("/signup/**", "/login/**", "/**","/api/songs/upload", "/api/stream/**").permitAll();
 //                    registry.requestMatchers("/api/home/admin/**").hasRole("ADMIN");
 //                    registry.requestMatchers("/api/home/user/**").hasRole("USER");
                     registry.anyRequest().authenticated();
@@ -46,11 +46,6 @@ public class SecurityConfiguration {
                 .addFilterBefore(authFilterJWT, UsernamePasswordAuthenticationFilter.class)
                 .build();
 
-    }
-
-    @Bean
-    public UzerDetailsService uzerService() {
-        return uzerDetailsService;
     }
 
     @Bean
@@ -66,7 +61,7 @@ public class SecurityConfiguration {
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(uzerDetailsService);
+        provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }

@@ -14,18 +14,18 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-public class UzerDetailsService implements UserDetailsService {
+public class UserDetService implements UserDetailsService {
 
-    private final UserRepo uzerRepo;
+    private final UserRepo userRepo;
 
     @Autowired
-    public UzerDetailsService(UserRepo uzerRepo) {
-        this.uzerRepo = uzerRepo;
+    public UserDetService(UserRepo userRepo) {
+        this.userRepo = userRepo;
     }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Optional<UserEntity> userOptional = uzerRepo.findByUsername(username);
+        Optional<UserEntity> userOptional = userRepo.findByUsername(username);
         if (userOptional.isPresent()) {
             var uzer = userOptional.get();
             return User.builder()

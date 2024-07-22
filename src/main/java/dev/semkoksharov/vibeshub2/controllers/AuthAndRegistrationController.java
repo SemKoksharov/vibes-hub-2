@@ -2,11 +2,12 @@ package dev.semkoksharov.vibeshub2.controllers;
 
 
 import dev.semkoksharov.vibeshub2.authentication.JWTService;
-import dev.semkoksharov.vibeshub2.authentication.UzerDetailsService;
+import dev.semkoksharov.vibeshub2.authentication.UserDetService;
 import dev.semkoksharov.vibeshub2.dto.forms.LoginForm;
-import dev.semkoksharov.vibeshub2.service.implementations.UserService;
+import dev.semkoksharov.vibeshub2.service.implementations.UserServiceImpl;
 import dev.semkoksharov.vibeshub2.dto.user.UserRegistrationDTO;
 import dev.semkoksharov.vibeshub2.dto.user.UserResponseDTO;
+import dev.semkoksharov.vibeshub2.service.interfaces.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,9 +27,9 @@ public class AuthAndRegistrationController {
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final JWTService jwtService;
-    private final UzerDetailsService userDetailsService;
+    private final UserDetService userDetailsService;
     @Autowired
-    public AuthAndRegistrationController(PasswordEncoder passwordEncoder, UserService userService, AuthenticationManager authenticationManager, JWTService jwtService, UzerDetailsService uzerDetailsService) {
+    public AuthAndRegistrationController(PasswordEncoder passwordEncoder, UserServiceImpl userService, AuthenticationManager authenticationManager, JWTService jwtService, UserDetService uzerDetailsService) {
         this.passwordEncoder = passwordEncoder;
         this.userService = userService;
         this.authenticationManager = authenticationManager;

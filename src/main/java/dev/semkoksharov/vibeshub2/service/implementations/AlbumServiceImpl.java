@@ -2,6 +2,7 @@ package dev.semkoksharov.vibeshub2.service.implementations;
 
 import dev.semkoksharov.vibeshub2.dto.album.AlbumDTO;
 import dev.semkoksharov.vibeshub2.dto.album.AlbumResponseDTO;
+import dev.semkoksharov.vibeshub2.dto.song.SongSimpleDTO;
 import dev.semkoksharov.vibeshub2.dto.user.ArtistSimpleDTO;
 import dev.semkoksharov.vibeshub2.exceptions.EntityUpdaterException;
 import dev.semkoksharov.vibeshub2.model.Album;
@@ -10,7 +11,6 @@ import dev.semkoksharov.vibeshub2.model.Song;
 import dev.semkoksharov.vibeshub2.repository.AlbumRepo;
 import dev.semkoksharov.vibeshub2.repository.ArtistDetailsRepo;
 import dev.semkoksharov.vibeshub2.repository.SongRepo;
-import dev.semkoksharov.vibeshub2.service.interfaces.AlbumServiceInt;
 import dev.semkoksharov.vibeshub2.utils.EntityUpdater;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-public class AlbumService implements AlbumServiceInt {
+public class AlbumServiceImpl implements dev.semkoksharov.vibeshub2.service.interfaces.AlbumService {
 
     private final AlbumRepo albumRepository;
     private final ArtistDetailsRepo artistRepo;
@@ -33,7 +33,7 @@ public class AlbumService implements AlbumServiceInt {
     private final EntityUpdater entityUpdater;
 
     @Autowired
-    public AlbumService(AlbumRepo albumRepository, ArtistDetailsRepo artistRepo, SongRepo songRepo, ModelMapper modelMapper, EntityUpdater entityUpdater) {
+    public AlbumServiceImpl(AlbumRepo albumRepository, ArtistDetailsRepo artistRepo, SongRepo songRepo, ModelMapper modelMapper, EntityUpdater entityUpdater) {
         this.albumRepository = albumRepository;
         this.artistRepo = artistRepo;
         this.songRepo = songRepo;
@@ -84,10 +84,18 @@ public class AlbumService implements AlbumServiceInt {
 
         return albums.stream().map(album -> {
             AlbumResponseDTO responseDTO = modelMapper.map(album, AlbumResponseDTO.class);
-            Set<ArtistSimpleDTO> artistDTOs = album.getArtists().stream()
+            Set<ArtistSimpleDTO> artistDTOs = album.getArtists()
+                    .stream()
                     .map(artist -> modelMapper.map(artist, ArtistSimpleDTO.class))
                     .collect(Collectors.toSet());
+
+            Set<SongSimpleDTO> songSimpleDTOs = album.getSongs()
+                    .stream()
+                    .map(song -> modelMapper.map(song, SongSimpleDTO.class))
+                    .collect(Collectors.toSet());
+
             responseDTO.setArtists(artistDTOs);
+            responseDTO.setSongs(songSimpleDTOs);
             return responseDTO;
         }).collect(Collectors.toList());
     }

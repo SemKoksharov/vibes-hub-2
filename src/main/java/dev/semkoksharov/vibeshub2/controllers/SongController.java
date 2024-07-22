@@ -2,8 +2,8 @@ package dev.semkoksharov.vibeshub2.controllers;
 
 import dev.semkoksharov.vibeshub2.dto.song.SongDTO;
 import dev.semkoksharov.vibeshub2.dto.song.SongResponseDTO;
-import dev.semkoksharov.vibeshub2.service.implementations.SongService;
-import dev.semkoksharov.vibeshub2.service.interfaces.SongServiceInt;
+import dev.semkoksharov.vibeshub2.service.implementations.SongServiceImpl;
+import dev.semkoksharov.vibeshub2.service.interfaces.SongService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,10 +19,10 @@ import java.util.Map;
 @RequestMapping("/api/songs")
 public class SongController {
 
-    private final SongServiceInt songService;
+    private final SongService songService;
     private static final Logger LOGGER = LoggerFactory.getLogger(SongController.class);
     @Autowired
-    public SongController(SongService songService) {
+    public SongController(SongServiceImpl songService) {
         this.songService = songService;
     }
 

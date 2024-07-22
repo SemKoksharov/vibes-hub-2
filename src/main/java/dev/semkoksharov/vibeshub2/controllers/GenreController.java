@@ -2,7 +2,7 @@ package dev.semkoksharov.vibeshub2.controllers;
 
 import dev.semkoksharov.vibeshub2.dto.genre.GenreDTO;
 import dev.semkoksharov.vibeshub2.dto.genre.GenreResponseDTO;
-import dev.semkoksharov.vibeshub2.service.interfaces.GenreServiceInt;
+import dev.semkoksharov.vibeshub2.service.interfaces.GenreService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,10 +14,10 @@ import java.util.List;
 @RequestMapping("/api/genres")
 public class GenreController {
 
-    private final GenreServiceInt genreService;
+    private final GenreService genreService;
 
     @Autowired
-    public GenreController(GenreServiceInt genreService) {
+    public GenreController(GenreService genreService) {
         this.genreService = genreService;
     }
 

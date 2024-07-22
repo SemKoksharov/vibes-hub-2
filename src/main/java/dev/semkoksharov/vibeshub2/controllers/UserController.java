@@ -1,8 +1,7 @@
 package dev.semkoksharov.vibeshub2.controllers;
 
 import dev.semkoksharov.vibeshub2.dto.user.ArtistDTO;
-import dev.semkoksharov.vibeshub2.service.implementations.UserService;
-import dev.semkoksharov.vibeshub2.dto.user.ArtistResponseDTO;
+import dev.semkoksharov.vibeshub2.service.implementations.UserServiceImpl;
 import dev.semkoksharov.vibeshub2.dto.user.UserResponseDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,10 +14,10 @@ import java.util.List;
 @RequestMapping("/user")
 public class UserController {
 
-    private final UserService userService;
+    private final UserServiceImpl userService;
 
     @Autowired
-    public UserController(UserService userService) {
+    public UserController(UserServiceImpl userService) {
         this.userService = userService;
     }
 

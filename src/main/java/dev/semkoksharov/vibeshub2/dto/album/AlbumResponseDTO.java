@@ -1,9 +1,12 @@
 package dev.semkoksharov.vibeshub2.dto.album;
 
+import dev.semkoksharov.vibeshub2.dto.song.SongSimpleDTO;
 import dev.semkoksharov.vibeshub2.dto.user.ArtistSimpleDTO;
+import lombok.Data;
 
 import java.util.Set;
 
+@Data
 public class AlbumResponseDTO {
 
     private Long id;
@@ -11,6 +14,7 @@ public class AlbumResponseDTO {
     private String coverPhotoUrl;
     private Integer year;
     private Set<ArtistSimpleDTO> artists;
+    private Set<SongSimpleDTO> songs;
 
     public AlbumResponseDTO() {
     }
@@ -23,43 +27,4 @@ public class AlbumResponseDTO {
         this.artists = artists;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getCoverPhotoUrl() {
-        return coverPhotoUrl;
-    }
-
-    public void setCoverPhotoUrl(String coverPhotoUrl) {
-        this.coverPhotoUrl = coverPhotoUrl;
-    }
-
-    public Integer getYear() {
-        return year;
-    }
-
-    public void setYear(Integer year) {
-        this.year = year;
-    }
-
-    public Set<ArtistSimpleDTO> getArtists() {
-        return artists;
-    }
-
-    public void setArtists(Set<ArtistSimpleDTO> artists) {
-        this.artists = artists;
-    }
 }

@@ -8,4 +8,6 @@ import java.util.Map;
 public interface Uploadable {
 
     Long getId();
+
+    String getMinioPath();
 }

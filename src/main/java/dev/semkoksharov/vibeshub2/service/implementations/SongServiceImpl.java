@@ -13,10 +13,11 @@ import dev.semkoksharov.vibeshub2.model.Song;
 import dev.semkoksharov.vibeshub2.repository.AlbumRepo;
 import dev.semkoksharov.vibeshub2.repository.GenreRepo;
 import dev.semkoksharov.vibeshub2.repository.SongRepo;
-import dev.semkoksharov.vibeshub2.service.interfaces.SongServiceInt;
+import dev.semkoksharov.vibeshub2.service.interfaces.SongService;
 import dev.semkoksharov.vibeshub2.utils.EntityUpdater;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,23 +27,28 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class SongService implements SongServiceInt {
+public class SongServiceImpl implements SongService {
 
     private final SongRepo songRepo;
     private final AlbumRepo albumRepo;
     private final GenreRepo genreRepo;
     private final ModelMapper modelMapper;
     private final EntityUpdater entityUpdater;
-    private final FileService fileService;
+    private final FileServiceImpl fileService;
+    private final MinIOServiceImpl minIOService;
+
+    @Value("${minio.musicBucket}")
+    private String musicBucket;
 
     @Autowired
-    public SongService(SongRepo songRepo, AlbumRepo albumRepo, GenreRepo genreRepo, ModelMapper modelMapper, EntityUpdater entityUpdater, FileService fileService) {
+    public SongServiceImpl(SongRepo songRepo, AlbumRepo albumRepo, GenreRepo genreRepo, ModelMapper modelMapper, EntityUpdater entityUpdater, FileServiceImpl fileService, MinIOServiceImpl minIOService) {
         this.songRepo = songRepo;
         this.albumRepo = albumRepo;
         this.genreRepo = genreRepo;
         this.modelMapper = modelMapper;
         this.entityUpdater = entityUpdater;
         this.fileService = fileService;
+        this.minIOService = minIOService;
     }
 
     @Override
@@ -167,7 +173,7 @@ public class SongService implements SongServiceInt {
             }
         }
 
-        Map<String, String> uploadFilesResult = fileService.multiUploadFiles(files, entities, FileService.FileType.AUDIO);
+        Map<String, String> uploadFilesResult = fileService.multiUploadFiles(files, entities, FileServiceImpl.FileType.AUDIO);
         uploadResult.putAll(uploadFilesResult);
 
         for (int i = 0; i < files.size(); i++) {
@@ -177,6 +183,7 @@ public class SongService implements SongServiceInt {
             if (song != null && uploadFilesResult.containsKey(filename) && !uploadFilesResult.get(filename).startsWith("[Upload error]")) {
                 String minioPath = uploadFilesResult.get(filename);
                 song.setMinioPath(minioPath);
+                song.setDirectUrl(fileService.getShortUrl(minioPath, musicBucket));
                 songRepo.save(song);
             }
         }
@@ -191,6 +198,8 @@ public class SongService implements SongServiceInt {
         responseDTO.setGenre(modelMapper.map(genre, GenreSimpleDTO.class));
         return responseDTO;
     }
+
+
 
 
 }

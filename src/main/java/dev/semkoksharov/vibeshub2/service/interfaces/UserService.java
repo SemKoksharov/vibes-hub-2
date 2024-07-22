@@ -6,7 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-public interface UserServiceInt {
+public interface UserService {
+
 
     UserResponseDTO saveUser(UserRegistrationDTO user);
 
