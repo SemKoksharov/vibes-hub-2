@@ -40,7 +40,8 @@ public class GenreServiceImpl implements GenreService {
     @Override
     public GenreResponseDTO getGenreById(Long id) {
         Optional<Genre> genreOptional = genreRepo.findById(id);
-        if (genreOptional.isEmpty()) throw new IllegalArgumentException("[Get error] Genre with id " + id + " not found");
+        if (genreOptional.isEmpty())
+            throw new IllegalArgumentException("[Get error] Genre with id " + id + " not found");
 
         Genre genre = genreOptional.get();
         return modelMapper.map(genre, GenreResponseDTO.class);
@@ -58,14 +59,21 @@ public class GenreServiceImpl implements GenreService {
 
     @Override
     public void deleteGenreById(Long id) {
-        if (!genreRepo.existsById(id)) throw new IllegalArgumentException("[Delete error] Genre with id " + id + " not found");
+        if (! genreRepo.existsById(id))
+            throw new IllegalArgumentException("[Delete error] Genre with id " + id + " not found");
         genreRepo.deleteById(id);
+    }
+
+    @Override
+    public void deleteAllGenres() {
+        genreRepo.deleteAll();
     }
 
     @Override
     public GenreResponseDTO updateGenre(Long id, GenreDTO genreDTO) {
         Optional<Genre> optionalGenre = genreRepo.findById(id);
-        if (optionalGenre.isEmpty()) throw new IllegalArgumentException("[Update error] Genre with id " + id + " not found");
+        if (optionalGenre.isEmpty())
+            throw new IllegalArgumentException("[Update error] Genre with id " + id + " not found");
 
         Genre toUpdate = optionalGenre.get();
 

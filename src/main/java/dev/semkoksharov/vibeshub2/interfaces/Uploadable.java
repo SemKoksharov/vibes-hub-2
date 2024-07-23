@@ -1,13 +1,14 @@
 package dev.semkoksharov.vibeshub2.interfaces;
 
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
-import java.util.Map;
-
 public interface Uploadable {
 
     Long getId();
 
     String getMinioPath();
+
+    void setMinioPath(String minioPath);
+
+    void setDirectUrl(String directUrl);
+
+    String getDirectUrl();
 }

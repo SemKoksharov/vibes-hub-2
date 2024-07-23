@@ -20,9 +20,11 @@ import java.util.Set;
 public class Album extends BaseEntity implements Uploadable {
 
     private String title;
-    private String coverImage;
-    private String minioPath; // in this case for cover picture
     private int year;
+
+    // These fields refer to files in blob storage (in this case album cover picture)
+    private String directUrl;
+    private String minioPath;
 
     @ManyToMany(fetch = FetchType.LAZY)
     private Set<Artist> artists = new HashSet<>();

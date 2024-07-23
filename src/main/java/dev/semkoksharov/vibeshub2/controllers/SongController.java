@@ -21,6 +21,7 @@ public class SongController {
 
     private final SongService songService;
     private static final Logger LOGGER = LoggerFactory.getLogger(SongController.class);
+
     @Autowired
     public SongController(SongServiceImpl songService) {
         this.songService = songService;

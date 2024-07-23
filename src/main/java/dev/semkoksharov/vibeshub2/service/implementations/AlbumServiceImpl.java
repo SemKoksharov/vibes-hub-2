@@ -88,7 +88,6 @@ public class AlbumServiceImpl implements dev.semkoksharov.vibeshub2.service.inte
                     .stream()
                     .map(artist -> modelMapper.map(artist, ArtistSimpleDTO.class))
                     .collect(Collectors.toSet());
-
             Set<SongSimpleDTO> songSimpleDTOs = album.getSongs()
                     .stream()
                     .map(song -> modelMapper.map(song, SongSimpleDTO.class))
@@ -104,6 +103,11 @@ public class AlbumServiceImpl implements dev.semkoksharov.vibeshub2.service.inte
     public void deleteAlbumById(Long id) {
         if (!albumRepository.existsById(id)) throw new IllegalArgumentException("[Delete error] Album with id " + id + " not found");
         albumRepository.deleteById(id);
+    }
+
+    @Override
+    public void deleteAllAlbums(){
+        albumRepository.deleteAll();
     }
 
     @Override

@@ -23,9 +23,10 @@ public class Song extends BaseEntity implements  Uploadable{
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "album_id")
     private Album album;
-
     private int duration;
     private String title;
+
+    // These fields refer to files in blob storage(in this case an audio file)
     private String directUrl;
     private String streamingUrl;
     private String minioPath;

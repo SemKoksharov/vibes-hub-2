@@ -127,7 +127,6 @@ public class SongServiceImpl implements SongService {
                 newAlbum.addSong(toUpdate);
                 albumRepo.saveAndFlush(newAlbum);
             }
-
         }
 
         if (songDTO.getGenreId() != null) {
@@ -187,7 +186,6 @@ public class SongServiceImpl implements SongService {
                 songRepo.save(song);
             }
         }
-
         return uploadResult;
     }
 
@@ -198,8 +196,4 @@ public class SongServiceImpl implements SongService {
         responseDTO.setGenre(modelMapper.map(genre, GenreSimpleDTO.class));
         return responseDTO;
     }
-
-
-
-
 }

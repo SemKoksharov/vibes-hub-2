@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
+
 @RestController
 @RequestMapping("/api/genres")
 public class GenreController {
@@ -21,10 +23,11 @@ public class GenreController {
         this.genreService = genreService;
     }
 
-    @PostMapping
-    public ResponseEntity<GenreResponseDTO> createGenre(@RequestBody GenreDTO genreDTO) {
-        GenreResponseDTO createdGenre = genreService.createGenre(genreDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdGenre);
+    @GetMapping("/{id}")
+    public ResponseEntity<GenreResponseDTO> getGenreById(@PathVariable  Long id){
+        GenreResponseDTO genre = genreService.getGenreById(id);
+
+        return ResponseEntity.ok(genre);
     }
 
     @GetMapping
@@ -34,11 +37,31 @@ public class GenreController {
         return ResponseEntity.ok(genres);
     }
 
+    @PostMapping
+    public ResponseEntity<GenreResponseDTO> createGenre(@RequestBody GenreDTO genreDTO) {
+        GenreResponseDTO createdGenre = genreService.createGenre(genreDTO);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdGenre);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<GenreResponseDTO> updateGenre(@PathVariable  Long id, GenreDTO genreDTO){
+        GenreResponseDTO genre = genreService.updateGenre(id, genreDTO);
+
+        return ResponseEntity.ok(genre);
+    }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteGenreById(@PathVariable Long id) {
+    public ResponseEntity<String> deleteGenreById(@PathVariable Long id) {
         genreService.deleteGenreById(id);
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok("Genre with id " + id + " was deleted");
+    }
+
+    @DeleteMapping
+    public ResponseEntity<String> deleteAllGenres() {
+        genreService.deleteAllGenres();
+
+        return ResponseEntity.ok("All genres have been deleted");
     }
 }

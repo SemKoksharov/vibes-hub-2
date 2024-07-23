@@ -20,16 +20,38 @@ public class AlbumController {
         this.albumService = albumService;
     }
 
-    @PostMapping
-    public ResponseEntity<AlbumResponseDTO> createAlbum(@RequestBody AlbumDTO albumDTO) {
-        AlbumResponseDTO createdAlbum = albumService.createAlbum(albumDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdAlbum);
-    }
-
     @GetMapping("/{id}")
-    public ResponseEntity<AlbumResponseDTO> getAlbumById(@PathVariable("id") Long id) {
+    public ResponseEntity<AlbumResponseDTO> getAlbumById(@PathVariable Long id) {
         AlbumResponseDTO album = albumService.getAlbumById(id);
+
         return ResponseEntity.ok(album);
     }
 
+    @PostMapping
+    public ResponseEntity<AlbumResponseDTO> createAlbum(@RequestBody AlbumDTO albumDTO) {
+        AlbumResponseDTO createdAlbum = albumService.createAlbum(albumDTO);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdAlbum);
+    }
+
+    @PutMapping
+    public ResponseEntity<AlbumResponseDTO> updateAlbum(@PathVariable Long id, AlbumDTO albumDTO){
+        AlbumResponseDTO album = albumService.updateAlbum(id, albumDTO);
+
+        return ResponseEntity.ok(album);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteAlbumById(@PathVariable Long id){
+        albumService.deleteAlbumById(id);
+
+        return ResponseEntity.ok("Album with id " + id + " has been deleted");
+    }
+
+    @DeleteMapping("/deleteAll")
+    public ResponseEntity<String> deleteAlbumById(){
+        albumService.deleteAllAlbums();
+
+        return ResponseEntity.ok("All albums have been deleted");
+    }
 }

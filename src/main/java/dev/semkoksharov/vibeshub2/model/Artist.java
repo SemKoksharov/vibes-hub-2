@@ -31,9 +31,4 @@ public class Artist extends RoleDetails {
             inverseJoinColumns = @JoinColumn(name = "album_id"))
     private Set<Album> albums;
 
-    @Override
-    @EqualsAndHashCode.Include
-    public int hashCode() {
-        return Objects.hash(getId());
-    }
 }

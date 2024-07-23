@@ -9,9 +9,7 @@ import dev.semkoksharov.vibeshub2.exceptions.EntityUpdaterException;
 import dev.semkoksharov.vibeshub2.model.*;
 import dev.semkoksharov.vibeshub2.model.base.RoleDetails;
 import dev.semkoksharov.vibeshub2.model.enums.UserRoles;
-import dev.semkoksharov.vibeshub2.repository.AdvertiserDetailsRepo;
-import dev.semkoksharov.vibeshub2.repository.ArtistDetailsRepo;
-import dev.semkoksharov.vibeshub2.repository.UserRepo;
+import dev.semkoksharov.vibeshub2.repository.*;
 import dev.semkoksharov.vibeshub2.service.interfaces.UserService;
 import dev.semkoksharov.vibeshub2.utils.EntityUpdater;
 import jakarta.persistence.EntityNotFoundException;
@@ -36,15 +34,19 @@ public class UserServiceImpl implements UserService {
     private final ArtistDetailsRepo artistDetailsRepo;
     private final AdvertiserDetailsRepo advertiserDetailsRepo;
     private final EntityUpdater entityUpdater;
+    private final SongRepo songRepo;
+    private final AlbumRepo albumRepo;
 
     @Autowired
-    public UserServiceImpl(UserRepo userRepo, PasswordEncoder passwordEncoder, ModelMapper modelMapper, ArtistDetailsRepo artistDetailsRepo, AdvertiserDetailsRepo advertiserDetailsRepo, EntityUpdater entityUpdater) {
+    public UserServiceImpl(UserRepo userRepo, PasswordEncoder passwordEncoder, ModelMapper modelMapper, ArtistDetailsRepo artistDetailsRepo, AdvertiserDetailsRepo advertiserDetailsRepo, EntityUpdater entityUpdater, SongRepo songRepo, AlbumRepo albumRepo) {
         this.userRepo = userRepo;
         this.passwordEncoder = passwordEncoder;
         this.modelMapper = modelMapper;
         this.artistDetailsRepo = artistDetailsRepo;
         this.advertiserDetailsRepo = advertiserDetailsRepo;
         this.entityUpdater = entityUpdater;
+        this.songRepo = songRepo;
+        this.albumRepo = albumRepo;
     }
 
     @Override
@@ -59,6 +61,7 @@ public class UserServiceImpl implements UserService {
         newUser.setPassword(passwordEncoder.encode(user.getPassword()));
         return newUser;
     }
+
     @Override
     public UserEntity updateUser(Long userID, UserRegistrationDTO user) {
         throw new UnsupportedOperationException("Update user functionality not implemented yet");
@@ -136,6 +139,7 @@ public class UserServiceImpl implements UserService {
                     " Exception message: " + e.getMessage());
         }
     }
+
     @Override
     public void updateRoleDetails(Long userID, AdvertiserDTO advertiserDTO) {
         UserEntity user = userRepo.findById(userID)
@@ -160,11 +164,11 @@ public class UserServiceImpl implements UserService {
     public List<UserResponseDTO> findAllUsers() {
         List<UserResponseDTO> allUsers = userRepo.findAll().stream().map(this::getUserResponseDTO
         ).toList();
-        if (allUsers.isEmpty()) throw new EmptyResultException("[Service message] Users were not found in the database");
+        if (allUsers.isEmpty())
+            throw new EmptyResultException("[Service message] Users were not found in the database");
 
         return allUsers;
     }
-
 
     @Override
     public UserResponseDTO findUserById(Long userID) {
@@ -182,17 +186,38 @@ public class UserServiceImpl implements UserService {
         return getUserResponseDTO(user);
     }
 
+    @Transactional
     @Override
     public void deleteUserById(Long userID) {
         UserEntity user = userRepo.findById(userID)
                 .orElseThrow(() -> new IllegalArgumentException("[Delete error] User with id " + userID + " is not found"));
 
         RoleDetails roleDetails = findRoleDetails(user).orElse(null);
-        if (roleDetails instanceof Artist) artistDetailsRepo.delete((Artist) roleDetails);
-        if (roleDetails instanceof Advertiser) advertiserDetailsRepo.delete((Advertiser) roleDetails);
+
+        if (roleDetails instanceof Artist artist) {
+            Set<Song> artistSongs = artist.getSongs();
+            Set<Album> artistAlbums = artist.getAlbums();
+
+            artistSongs.forEach(song -> {
+                song.getAlbum().removeSong(song);
+                songRepo.delete(song);
+            });
+
+            artistAlbums.forEach(album -> album.removeArtist(artist));
+
+            artist.getSongs().clear();
+            artist.getAlbums().clear();
+
+            artistDetailsRepo.delete(artist);
+        } else if (roleDetails instanceof Advertiser advertiser) {
+            Set<Ad> ads = advertiser.getAds();
+
+            advertiserDetailsRepo.delete(advertiser);
+        }
 
         userRepo.deleteById(userID);
     }
+
 
     @Override
     public void deleteAllUsers() {
@@ -223,9 +248,9 @@ public class UserServiceImpl implements UserService {
         return dto;
     }
 
-    private AdvertiserResponseDTO mapToAdvertiserDTO(Advertiser advertiser){
+    private AdvertiserResponseDTO mapToAdvertiserDTO(Advertiser advertiser) {
         AdvertiserResponseDTO dto = modelMapper.map(advertiser, AdvertiserResponseDTO.class);
-        Set<AdSimpleDTO> adDTOs =  advertiser.getAds().stream().map(ad -> modelMapper.map(ad, AdSimpleDTO.class)).collect(Collectors.toSet());
+        Set<AdSimpleDTO> adDTOs = advertiser.getAds().stream().map(ad -> modelMapper.map(ad, AdSimpleDTO.class)).collect(Collectors.toSet());
         dto.setAds(adDTOs);
 
         return dto;

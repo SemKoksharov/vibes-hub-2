@@ -16,6 +16,8 @@ public interface AlbumService {
 
     void deleteAlbumById(Long id);
 
+    void deleteAllAlbums();
+
     AlbumResponseDTO updateAlbum(Long id, AlbumDTO albumDTO);
 
     void addArtistToAlbum(Long albumId, Artist artist);

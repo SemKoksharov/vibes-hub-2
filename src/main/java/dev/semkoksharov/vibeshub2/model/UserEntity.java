@@ -3,6 +3,7 @@ package dev.semkoksharov.vibeshub2.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import dev.semkoksharov.vibeshub2.interfaces.Uploadable;
 import dev.semkoksharov.vibeshub2.model.base.BaseEntity;
+import dev.semkoksharov.vibeshub2.model.base.RoleDetails;
 import dev.semkoksharov.vibeshub2.model.enums.UserRoles;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -38,10 +39,10 @@ public class UserEntity extends BaseEntity implements UserDetails, Uploadable {
 
     @Column(unique = true)
     private String telNumber;
-    private String urlPhoto;
 
     @JsonIgnore
     private String minioPath;
+    private String directUrl;
 
     @Enumerated(value = EnumType.STRING)
     @ElementCollection(targetClass = UserRoles.class, fetch = FetchType.EAGER)
