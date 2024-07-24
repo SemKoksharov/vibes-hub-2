@@ -7,6 +7,7 @@ import dev.semkoksharov.vibeshub2.model.Genre;
 import dev.semkoksharov.vibeshub2.repository.GenreRepo;
 import dev.semkoksharov.vibeshub2.service.interfaces.GenreService;
 import dev.semkoksharov.vibeshub2.utils.EntityUpdater;
+import jakarta.persistence.EntityNotFoundException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -41,7 +42,7 @@ public class GenreServiceImpl implements GenreService {
     public GenreResponseDTO getGenreById(Long id) {
         Optional<Genre> genreOptional = genreRepo.findById(id);
         if (genreOptional.isEmpty())
-            throw new IllegalArgumentException("[Get error] Genre with id " + id + " not found");
+            throw new EntityNotFoundException("[Get error] Genre with id " + id + " not found");
 
         Genre genre = genreOptional.get();
         return modelMapper.map(genre, GenreResponseDTO.class);
@@ -50,7 +51,7 @@ public class GenreServiceImpl implements GenreService {
     @Override
     public List<GenreResponseDTO> getAllGenres() {
         List<Genre> genres = genreRepo.findAll();
-        if (genres.isEmpty()) throw new IllegalArgumentException("[Get error] No genres found in the database");
+        if (genres.isEmpty()) throw new EntityNotFoundException("[Get error] No genres found in the database");
 
         return genres.stream()
                 .map(genre -> modelMapper.map(genre, GenreResponseDTO.class))
@@ -60,7 +61,7 @@ public class GenreServiceImpl implements GenreService {
     @Override
     public void deleteGenreById(Long id) {
         if (! genreRepo.existsById(id))
-            throw new IllegalArgumentException("[Delete error] Genre with id " + id + " not found");
+            throw new EntityNotFoundException("[Delete error] Genre with id " + id + " not found");
         genreRepo.deleteById(id);
     }
 

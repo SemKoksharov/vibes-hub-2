@@ -2,11 +2,12 @@ package dev.semkoksharov.vibeshub2.service.implementations;
 
 import dev.semkoksharov.vibeshub2.dto.advertisement.AdSimpleDTO;
 import dev.semkoksharov.vibeshub2.dto.album.AlbumSimpleDTO;
-import dev.semkoksharov.vibeshub2.dto.song.SongSimpleDTO;
 import dev.semkoksharov.vibeshub2.dto.user.*;
 import dev.semkoksharov.vibeshub2.exceptions.EmptyResultException;
 import dev.semkoksharov.vibeshub2.exceptions.EntityUpdaterException;
-import dev.semkoksharov.vibeshub2.model.*;
+import dev.semkoksharov.vibeshub2.model.Advertiser;
+import dev.semkoksharov.vibeshub2.model.Artist;
+import dev.semkoksharov.vibeshub2.model.UserEntity;
 import dev.semkoksharov.vibeshub2.model.base.RoleDetails;
 import dev.semkoksharov.vibeshub2.model.enums.UserRoles;
 import dev.semkoksharov.vibeshub2.repository.*;
@@ -71,13 +72,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponseDTO createArtistIfUserHasRole(ArtistDTO artistDTO) {
         UserEntity user = userRepo.findById(artistDTO.getId())
-                .orElseThrow(() -> new IllegalArgumentException("[Create error] User with id " + artistDTO.getId() + " not found"));
+                .orElseThrow(() -> new EntityNotFoundException("[Create error] User with id " + artistDTO.getId() + " not found"));
 
         if (user.getUserRoles().contains(UserRoles.ARTIST)) {
             Artist artist = modelMapper.map(artistDTO, Artist.class);
             artist.setUser(user);
             artist.setAlbums(Set.of());
-            artist.setSongs(Set.of());
             var saved = artistDetailsRepo.saveAndFlush(artist);
             var dto = modelMapper.map(user, UserWithRoleDetailsDTO.class);
             dto.setRoleDetails(mapToArtistDTO(saved));
@@ -85,14 +85,14 @@ public class UserServiceImpl implements UserService {
             return dto;
         }
 
-        throw new IllegalArgumentException("[Create error] User with id " + artistDTO.getId() + " does not have ARTIST role");
+        throw new EntityNotFoundException("[Create error] User with id " + artistDTO.getId() + " does not have ARTIST role");
     }
 
     @Transactional
     @Override
     public UserResponseDTO createAdvertiserIfUserHasRole(AdvertiserDTO advertiserDTO) {
         UserEntity user = userRepo.findById(advertiserDTO.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("[Create error] User with id " + advertiserDTO.getUserId() + " not found"));
+                .orElseThrow(() -> new EntityNotFoundException("[Create error] User with id " + advertiserDTO.getUserId() + " not found"));
 
         if (user.getUserRoles().contains(UserRoles.ADVERTISER)) {
             Advertiser advertiser = modelMapper.map(advertiserDTO, Advertiser.class);
@@ -123,7 +123,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void updateRoleDetails(Long userID, ArtistDTO artistDTO) {
         UserEntity user = userRepo.findById(userID)
-                .orElseThrow(() -> new IllegalArgumentException("[Update error] User with id " + userID + " is not found"));
+                .orElseThrow(() -> new EntityNotFoundException("[Update error] User with id " + userID + " is not found"));
 
         RoleDetails detailsToUpdate = findRoleDetails(user)
                 .orElseThrow(() -> new EntityNotFoundException("[Update error] Role details for user '" + user.getUsername() +
@@ -143,7 +143,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void updateRoleDetails(Long userID, AdvertiserDTO advertiserDTO) {
         UserEntity user = userRepo.findById(userID)
-                .orElseThrow(() -> new IllegalArgumentException("[Update error] User with id " + userID + " is not found"));
+                .orElseThrow(() -> new EntityNotFoundException("[Update error] User with id " + userID + " is not found"));
 
         RoleDetails detailsToUpdate = findRoleDetails(user)
                 .orElseThrow(() -> new EntityNotFoundException("[Update error] Role details for user '" + user.getUsername() +
@@ -181,7 +181,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponseDTO findUserByUsername(String username) {
         UserEntity user = userRepo.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("[Delete error] User with username '" + username + "' is not found"));
+                .orElseThrow(() -> new EntityNotFoundException("[Delete error] User with username '" + username + "' is not found"));
 
         return getUserResponseDTO(user);
     }
@@ -190,28 +190,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUserById(Long userID) {
         UserEntity user = userRepo.findById(userID)
-                .orElseThrow(() -> new IllegalArgumentException("[Delete error] User with id " + userID + " is not found"));
+                .orElseThrow(() -> new EntityNotFoundException("[Delete error] User with id " + userID + " is not found"));
 
         RoleDetails roleDetails = findRoleDetails(user).orElse(null);
 
         if (roleDetails instanceof Artist artist) {
-            Set<Song> artistSongs = artist.getSongs();
-            Set<Album> artistAlbums = artist.getAlbums();
-
-            artistSongs.forEach(song -> {
-                song.getAlbum().removeSong(song);
-                songRepo.delete(song);
-            });
-
-            artistAlbums.forEach(album -> album.removeArtist(artist));
-
-            artist.getSongs().clear();
-            artist.getAlbums().clear();
-
             artistDetailsRepo.delete(artist);
-        } else if (roleDetails instanceof Advertiser advertiser) {
-            Set<Ad> ads = advertiser.getAds();
 
+        } else if (roleDetails instanceof Advertiser advertiser) {
             advertiserDetailsRepo.delete(advertiser);
         }
 
@@ -239,11 +225,6 @@ public class UserServiceImpl implements UserService {
                 .map(album -> modelMapper.map(album, AlbumSimpleDTO.class))
                 .collect(Collectors.toSet());
         dto.setAlbums(albumDTOs);
-
-        Set<SongSimpleDTO> songDTOs = artist.getSongs().stream()
-                .map(song -> modelMapper.map(song, SongSimpleDTO.class))
-                .collect(Collectors.toSet());
-        dto.setSongs(songDTOs);
 
         return dto;
     }

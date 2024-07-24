@@ -14,6 +14,4 @@ public class ArtistResponseDTO {
     private String description;
     private String artistName;
     private Set<AlbumSimpleDTO> albums;
-    private Set<SongSimpleDTO> songs;
-
 }

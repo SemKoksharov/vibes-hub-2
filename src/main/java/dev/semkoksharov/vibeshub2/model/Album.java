@@ -26,10 +26,11 @@ public class Album extends BaseEntity implements Uploadable {
     private String directUrl;
     private String minioPath;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    private Set<Artist> artists = new HashSet<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "artist_id")
+    Artist artist;
 
-    @OneToMany(mappedBy = "album", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "album", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Set<Song> songs = new HashSet<>();
 
     public void addSong(Song song) {
@@ -41,13 +42,4 @@ public class Album extends BaseEntity implements Uploadable {
         this.songs.remove(song);
         song.setAlbum(null);
     }
-
-    public void addArtist(Artist artist) {
-        this.artists.add(artist);
-    }
-
-    public void removeArtist(Artist artist) {
-        this.artists.remove(artist);
-    }
-
 }

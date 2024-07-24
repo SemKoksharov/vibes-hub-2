@@ -10,12 +10,15 @@ import dev.semkoksharov.vibeshub2.interfaces.Uploadable;
 import dev.semkoksharov.vibeshub2.model.Album;
 import dev.semkoksharov.vibeshub2.model.Genre;
 import dev.semkoksharov.vibeshub2.model.Song;
+import dev.semkoksharov.vibeshub2.model.enums.FileType;
 import dev.semkoksharov.vibeshub2.repository.AlbumRepo;
 import dev.semkoksharov.vibeshub2.repository.GenreRepo;
 import dev.semkoksharov.vibeshub2.repository.SongRepo;
 import dev.semkoksharov.vibeshub2.service.interfaces.SongService;
 import dev.semkoksharov.vibeshub2.utils.EntityUpdater;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -37,6 +40,8 @@ public class SongServiceImpl implements SongService {
     private final FileServiceImpl fileService;
     private final MinIOServiceImpl minIOService;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SongServiceImpl.class);
+
     @Value("${minio.musicBucket}")
     private String musicBucket;
 
@@ -55,17 +60,11 @@ public class SongServiceImpl implements SongService {
     public SongResponseDTO createSong(SongDTO songDTO) {
         Song song = modelMapper.map(songDTO, Song.class);
 
-        Optional<Album> albumOptional = albumRepo.findById(songDTO.getAlbumId());
-        if (albumOptional.isEmpty()) {
-            throw new IllegalArgumentException("[Create error] Album with id " + songDTO.getAlbumId() + " not found");
-        }
-        Album album = albumOptional.get();
+        Album album = albumRepo.findById(songDTO.getAlbumId()).orElseThrow(() ->
+                new IllegalArgumentException("[Create error] Album with id " + songDTO.getAlbumId() + " not found"));
 
-        Optional<Genre> genreOptional = genreRepo.findById(songDTO.getGenreId());
-        if (genreOptional.isEmpty()) {
-            throw new IllegalArgumentException("[Create error] Genre with id " + songDTO.getGenreId() + " not found");
-        }
-        Genre genre = genreOptional.get();
+        Genre genre = genreRepo.findById(songDTO.getGenreId()).orElseThrow(() ->
+                new IllegalArgumentException("[Create error] Genre with id " + songDTO.getGenreId() + " not found"));
 
         song.setAlbum(album);
         song.setGenre(genre);
@@ -77,12 +76,9 @@ public class SongServiceImpl implements SongService {
 
     @Override
     public SongResponseDTO getSongById(Long id) {
-        Optional<Song> songOptional = songRepo.findById(id);
-        if (songOptional.isEmpty()) {
-            throw new IllegalArgumentException("[Get error] Song with id " + id + " is not found");
-        }
+        Song song = songRepo.findById(id).orElseThrow(() ->
+                new IllegalArgumentException("[Get error] Song with id " + id + " is not found"));
 
-        Song song = songOptional.get();
         return mapToResponseDTO(song, song.getAlbum(), song.getGenre());
     }
 
@@ -150,43 +146,79 @@ public class SongServiceImpl implements SongService {
 
     @Override
     public Map<String, String> uploadAudio(List<MultipartFile> files, List<Long> ids) {
-        Map<String, String> uploadResult = new HashMap<>();
-        List<Uploadable> entities = new ArrayList<>();
-        List<String> filenames = files.stream().map(MultipartFile::getOriginalFilename).toList();
 
         if (files.size() != ids.size()) {
-            throw new FilesNotUploadedException(
-                    "[Upload error] The number of file(s) does not correspond to the number of identifiers! Files cannot be uploaded."
-            );
+            String errorMessage = "[Upload error] The number of files does not correspond to the number of identifiers! Files cannot be uploaded.";
+            LOGGER.error(errorMessage);
+            throw new FilesNotUploadedException(errorMessage);
         }
 
+        Map<String, String> uploadResult = new HashMap<>();
+        List<MultipartFile> validFiles = new ArrayList<>();
+        List<Uploadable> validEntities = new ArrayList<>();
+        Map<String, Long> filenameToIdMap = new HashMap<>();
+
+        LOGGER.info("Starting audio upload process");
+        LOGGER.debug("Number of files: {}", files.size());
+        LOGGER.debug("Number of ids: {}", ids.size());
+
         for (int i = 0; i < files.size(); i++) {
+            MultipartFile file = files.get(i);
             Long songId = ids.get(i);
-            String filename = filenames.get(i);
-            Optional<Song> songOptional = songRepo.findById(songId);
+            String filename = file.getOriginalFilename();
+            filenameToIdMap.put(filename, songId);
 
-            if (songOptional.isEmpty()) {
-                uploadResult.put(filename, "[Upload error] Song entity with id " + songId + " is not found in the database");
+            LOGGER.debug("Processing file: {} with id: {}", filename, songId);
+
+            Optional<Song> songOpt = songRepo.findById(songId);
+            if (songOpt.isEmpty()) {
+                LOGGER.error("Song entity with id {} is not found in the database! File {} cannot be uploaded", songId, filename);
+                uploadResult.put(filename, "[Upload error] Song entity with id " + songId + " is not found in the database! File cannot be uploaded");
             } else {
-                entities.add(songOptional.get());
+                validFiles.add(file);
+                validEntities.add(songOpt.get());
             }
         }
 
-        Map<String, String> uploadFilesResult = fileService.multiUploadFiles(files, entities, FileServiceImpl.FileType.AUDIO);
-        uploadResult.putAll(uploadFilesResult);
-
-        for (int i = 0; i < files.size(); i++) {
-            String filename = filenames.get(i);
-            Song song = entities.size() > i ? (Song) entities.get(i) : null;
-
-            if (song != null && uploadFilesResult.containsKey(filename) && !uploadFilesResult.get(filename).startsWith("[Upload error]")) {
-                String minioPath = uploadFilesResult.get(filename);
-                song.setMinioPath(minioPath);
-                song.setDirectUrl(fileService.getShortUrl(minioPath, musicBucket));
-                songRepo.save(song);
-            }
+        if (validFiles.isEmpty()) {
+            return uploadResult;
         }
+
+        Map<String, String> uploadFilesResult = fileService.multiUploadFiles(validFiles, validEntities, FileType.AUDIO);
+
+        assignUploadResultsToEntities(validFiles, validEntities, uploadFilesResult, uploadResult);
+
+        LOGGER.info("Audio upload process completed");
         return uploadResult;
+    }
+
+    private void assignUploadResultsToEntities(List<MultipartFile> validFiles, List<Uploadable> validEntities, Map<String, String> uploadFilesResult, Map<String, String> uploadResult) {
+        for (int i = 0; i < validFiles.size(); i++) {
+            MultipartFile file = validFiles.get(i);
+            String filename = file.getOriginalFilename();
+            Song song = (Song) validEntities.get(i);
+
+            if (uploadFilesResult.containsKey(filename)) {
+                String result = uploadFilesResult.get(filename);
+
+                if (result.startsWith("[Upload error]")) {
+                    LOGGER.error("Failed to upload file: '{}'", filename);
+                    uploadResult.put(filename, result);
+                } else {
+                    String minioPath = result;
+                    song.setMinioPath(minioPath);
+                    song.setDirectUrl(fileService.getShortUrl(minioPath, musicBucket));
+                    songRepo.save(song);
+                    uploadResult.put(filename, song.getDirectUrl());
+
+                    LOGGER.debug("Assigned minioPath '{}' and directUrl to song with id {}, original file: '{}'", minioPath, song.getId(), filename);
+                    LOGGER.info("Successfully uploaded and updated song with id {}, original file: '{}'", song.getId(), filename);
+                }
+            } else {
+                LOGGER.error("Upload result for file '{}' is not found", filename);
+                uploadResult.put(filename, "[Upload error] Upload result not found for file " + filename);
+            }
+        }
     }
 
 

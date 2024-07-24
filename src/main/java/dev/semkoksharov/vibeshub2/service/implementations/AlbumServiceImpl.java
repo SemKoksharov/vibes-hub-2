@@ -4,6 +4,7 @@ import dev.semkoksharov.vibeshub2.dto.album.AlbumDTO;
 import dev.semkoksharov.vibeshub2.dto.album.AlbumResponseDTO;
 import dev.semkoksharov.vibeshub2.dto.song.SongSimpleDTO;
 import dev.semkoksharov.vibeshub2.dto.user.ArtistSimpleDTO;
+import dev.semkoksharov.vibeshub2.exceptions.EmptyResultException;
 import dev.semkoksharov.vibeshub2.exceptions.EntityUpdaterException;
 import dev.semkoksharov.vibeshub2.model.Album;
 import dev.semkoksharov.vibeshub2.model.Artist;
@@ -11,7 +12,9 @@ import dev.semkoksharov.vibeshub2.model.Song;
 import dev.semkoksharov.vibeshub2.repository.AlbumRepo;
 import dev.semkoksharov.vibeshub2.repository.ArtistDetailsRepo;
 import dev.semkoksharov.vibeshub2.repository.SongRepo;
+import dev.semkoksharov.vibeshub2.service.interfaces.AlbumService;
 import dev.semkoksharov.vibeshub2.utils.EntityUpdater;
+import jakarta.persistence.EntityNotFoundException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,12 +22,11 @@ import org.springframework.stereotype.Service;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-public class AlbumServiceImpl implements dev.semkoksharov.vibeshub2.service.interfaces.AlbumService {
+public class AlbumServiceImpl implements AlbumService {
 
     private final AlbumRepo albumRepository;
     private final ArtistDetailsRepo artistRepo;
@@ -44,35 +46,38 @@ public class AlbumServiceImpl implements dev.semkoksharov.vibeshub2.service.inte
     @Override
     public AlbumResponseDTO createAlbum(AlbumDTO albumDTO) {
         Album album = modelMapper.map(albumDTO, Album.class);
-        Set<Artist> artists = new HashSet<>(artistRepo.findAllById(albumDTO.getArtistIds()));
-        if (artists.isEmpty()) throw new IllegalArgumentException("[Create error] Artists not found or empty list");
+        Artist artist = artistRepo.findById(albumDTO.getArtistId())
+                .orElseThrow(() -> new EntityNotFoundException("[Album creation error] Artist with id " +
+                        albumDTO.getArtistId() + " is not found in the database"));
 
-        album.setArtists(artists);
+        album.setArtist(artist);
         Album savedAlbum = albumRepository.saveAndFlush(album);
 
-        artists.forEach(artist -> artist.getAlbums().add(savedAlbum));
-        artistRepo.saveAllAndFlush(artists);
+        artist.getAlbums().add(savedAlbum);
+        artistRepo.saveAndFlush(artist);
 
         AlbumResponseDTO responseDTO = modelMapper.map(savedAlbum, AlbumResponseDTO.class);
-        Set<ArtistSimpleDTO> artistDTOs = artists.stream()
-                .map(artist -> modelMapper.map(artist, ArtistSimpleDTO.class))
-                .collect(Collectors.toSet());
-        responseDTO.setArtists(artistDTOs);
+        ArtistSimpleDTO artistDTOs = modelMapper.map(artist, ArtistSimpleDTO.class);
+        responseDTO.setArtist(artistDTOs);
 
         return responseDTO;
     }
 
     @Override
     public AlbumResponseDTO getAlbumById(Long id) {
-        Optional<Album> albumOptional = albumRepository.findById(id);
-        if (albumOptional.isEmpty()) throw new IllegalArgumentException("[Get error] Album with id " + id + " not found");
-
-        Album album = albumOptional.get();
+        Album album = albumRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("[Get error] Album with id " + id + " not found"));
         AlbumResponseDTO responseDTO = modelMapper.map(album, AlbumResponseDTO.class);
-        Set<ArtistSimpleDTO> artistDTOs = album.getArtists().stream()
-                .map(artist -> modelMapper.map(artist, ArtistSimpleDTO.class))
+        Artist artist = album.getArtist();
+
+        ArtistSimpleDTO artistDTO = modelMapper.map(artist, ArtistSimpleDTO.class);
+        Set<SongSimpleDTO> songSimpleDTOs = album.getSongs()
+                .stream()
+                .map(song -> modelMapper.map(song, SongSimpleDTO.class))
                 .collect(Collectors.toSet());
-        responseDTO.setArtists(artistDTOs);
+
+        responseDTO.setArtist(artistDTO);
+        responseDTO.setSongs(songSimpleDTOs);
 
         return responseDTO;
     }
@@ -80,20 +85,17 @@ public class AlbumServiceImpl implements dev.semkoksharov.vibeshub2.service.inte
     @Override
     public List<AlbumResponseDTO> getAllAlbums() {
         List<Album> albums = albumRepository.findAll();
-        if (albums.isEmpty()) throw new IllegalArgumentException("[Get error] No albums found in the database");
+        if (albums.isEmpty()) throw new EmptyResultException("[Get error] No albums found in the database");
 
         return albums.stream().map(album -> {
             AlbumResponseDTO responseDTO = modelMapper.map(album, AlbumResponseDTO.class);
-            Set<ArtistSimpleDTO> artistDTOs = album.getArtists()
-                    .stream()
-                    .map(artist -> modelMapper.map(artist, ArtistSimpleDTO.class))
-                    .collect(Collectors.toSet());
+            ArtistSimpleDTO artistDTO = modelMapper.map(album.getArtist(), ArtistSimpleDTO.class);
             Set<SongSimpleDTO> songSimpleDTOs = album.getSongs()
                     .stream()
                     .map(song -> modelMapper.map(song, SongSimpleDTO.class))
                     .collect(Collectors.toSet());
 
-            responseDTO.setArtists(artistDTOs);
+            responseDTO.setArtist(artistDTO);
             responseDTO.setSongs(songSimpleDTOs);
             return responseDTO;
         }).collect(Collectors.toList());
@@ -101,21 +103,20 @@ public class AlbumServiceImpl implements dev.semkoksharov.vibeshub2.service.inte
 
     @Override
     public void deleteAlbumById(Long id) {
-        if (!albumRepository.existsById(id)) throw new IllegalArgumentException("[Delete error] Album with id " + id + " not found");
+        if (!albumRepository.existsById(id))
+            throw new EntityNotFoundException("[Delete error] Album with id " + id + " not found");
         albumRepository.deleteById(id);
     }
 
     @Override
-    public void deleteAllAlbums(){
+    public void deleteAllAlbums() {
         albumRepository.deleteAll();
     }
 
     @Override
     public AlbumResponseDTO updateAlbum(Long id, AlbumDTO albumDTO) {
-        Optional<Album> optionalAlbum = albumRepository.findById(id);
-        if (optionalAlbum.isEmpty()) throw new IllegalArgumentException("[Update error] Album with id " + id + " not found");
-
-        Album toUpdate = optionalAlbum.get();
+        Album toUpdate = albumRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("[Update error] Album with id " + id + " not found"));
 
         try {
             entityUpdater.update(albumDTO, toUpdate);
@@ -125,41 +126,19 @@ public class AlbumServiceImpl implements dev.semkoksharov.vibeshub2.service.inte
         }
 
         Album updatedAlbum = albumRepository.save(toUpdate);
+        Artist artist = updatedAlbum.getArtist();
         AlbumResponseDTO responseDTO = modelMapper.map(updatedAlbum, AlbumResponseDTO.class);
-        Set<ArtistSimpleDTO> artistDTOs = toUpdate.getArtists().stream()
-                .map(artist -> modelMapper.map(artist, ArtistSimpleDTO.class))
-                .collect(Collectors.toSet());
-        responseDTO.setArtists(artistDTOs);
+        ArtistSimpleDTO artistDTO = modelMapper.map(artist, ArtistSimpleDTO.class);
+        responseDTO.setArtist(artistDTO);
 
         return responseDTO;
     }
 
     @Override
-    public void addArtistToAlbum(Long albumId, Artist artist) {
-        Optional<Album> optionalAlbum = albumRepository.findById(albumId);
-        if (optionalAlbum.isEmpty()) throw new IllegalArgumentException("[Update error] Album with id " + albumId + " not found");
-
-        Album album = optionalAlbum.get();
-        album.addArtist(artist);
-        albumRepository.saveAndFlush(album);
-    }
-
-    @Override
-    public void removeArtistFromAlbum(Long albumId, Artist artist) {
-        Optional<Album> optionalAlbum = albumRepository.findById(albumId);
-        if (optionalAlbum.isEmpty()) throw new IllegalArgumentException("[Update error] Album with id " + albumId + " not found");
-
-        Album album = optionalAlbum.get();
-        album.removeArtist(artist);
-        albumRepository.saveAndFlush(album);
-    }
-
-    @Override
     public void addSongToAlbum(Long albumId, Song song) {
-        Optional<Album> optionalAlbum = albumRepository.findById(albumId);
-        if (optionalAlbum.isEmpty()) throw new IllegalArgumentException("[Update error] Album with id " + albumId + " not found");
+        Album album = albumRepository.findById(albumId)
+                .orElseThrow(() -> new EntityNotFoundException("[Update error] Album with id " + albumId + " not found"));
 
-        Album album = optionalAlbum.get();
         album.addSong(song);
         song.setAlbum(album);
         albumRepository.saveAndFlush(album);
@@ -168,10 +147,9 @@ public class AlbumServiceImpl implements dev.semkoksharov.vibeshub2.service.inte
 
     @Override
     public void removeSongFromAlbum(Long albumId, Song song) {
-        Optional<Album> optionalAlbum = albumRepository.findById(albumId);
-        if (optionalAlbum.isEmpty()) throw new IllegalArgumentException("[Update error] Album with id " + albumId + " not found");
+        Album album = albumRepository.findById(albumId)
+                .orElseThrow(() -> new EntityNotFoundException("[Update error] Album with id " + albumId + " not found"));
 
-        Album album = optionalAlbum.get();
         album.removeSong(song);
         song.setAlbum(null);
         albumRepository.saveAndFlush(album);

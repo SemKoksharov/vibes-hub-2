@@ -12,7 +12,7 @@ public class AlbumDTO {
 
     private String title;
     private Integer year;
-    private Set<Long> artistIds;
+    private Long artistId;
 }
 
 

@@ -20,9 +20,6 @@ public interface AlbumService {
 
     AlbumResponseDTO updateAlbum(Long id, AlbumDTO albumDTO);
 
-    void addArtistToAlbum(Long albumId, Artist artist);
-
-    void removeArtistFromAlbum(Long albumId, Artist artist);
 
     void addSongToAlbum(Long albumId, Song song);
 

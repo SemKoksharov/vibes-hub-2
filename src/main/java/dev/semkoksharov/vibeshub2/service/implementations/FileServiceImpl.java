@@ -7,6 +7,7 @@ import dev.semkoksharov.vibeshub2.model.Album;
 import dev.semkoksharov.vibeshub2.model.Artist;
 import dev.semkoksharov.vibeshub2.model.Song;
 import dev.semkoksharov.vibeshub2.model.UserEntity;
+import dev.semkoksharov.vibeshub2.model.enums.FileType;
 import dev.semkoksharov.vibeshub2.repository.AlbumRepo;
 import dev.semkoksharov.vibeshub2.repository.SongRepo;
 import dev.semkoksharov.vibeshub2.repository.UserRepo;
@@ -41,10 +42,6 @@ public class FileServiceImpl {
         this.songRepo = songRepo;
         this.albumRepo = albumRepo;
         this.userRepo = userRepo;
-    }
-
-    public enum FileType {
-        AUDIO, ALBUM_COVER, PROFILE_PICTURE
     }
 
     public Map<String, String> uploadFile(MultipartFile file, Uploadable entity, FileType fileType) {
@@ -141,13 +138,13 @@ public class FileServiceImpl {
             case AUDIO -> {
                 Song song = (Song) entity;
                 Album album = song.getAlbum();
-                String artistNames = removeSpaces(album.getArtists().stream().map(Artist::getArtistName).collect(Collectors.joining("-","[", "]")));
-                yield album.getYear() + "_" + artistNames + "_" + album.getTitle();
+                String artistName = removeSpaces(album.getArtist().getArtistName());
+                yield album.getYear() + "_" + artistName + "_" + album.getTitle();
             }
             case ALBUM_COVER -> {
                 Album album = (Album) entity;
-                String artistNames = removeSpaces(album.getArtists().stream().map(Artist::getArtistName).collect(Collectors.joining("-","[", "]")));
-                yield album.getYear() + "_" + artistNames + "_" + album.getTitle();
+                String artistName = removeSpaces(album.getArtist().getArtistName());
+                yield album.getYear() + "_" + artistName + "_" + album.getTitle();
             }
             case PROFILE_PICTURE -> {
                 UserEntity user = (UserEntity) entity;
@@ -176,6 +173,7 @@ public class FileServiceImpl {
     private Map<String, String> uploadFiles(List<MultipartFile> files, List<String> destinationFolderNames, String bucketName) {
         Map<String, String> resultMap = new HashMap<>();
         for (int i = 0; i < files.size(); i++) {
+
             MultipartFile file = files.get(i);
             String originalFilename = file.getOriginalFilename();
             String newFileName = originalFilename + "_" + UUID.randomUUID();
@@ -205,6 +203,6 @@ public class FileServiceImpl {
 
 
     private String removeSpaces(String input) {
-        return input.replace(" ", "");
+        return input.replace(" ", "_");
     }
 }

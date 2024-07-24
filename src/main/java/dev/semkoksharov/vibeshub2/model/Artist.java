@@ -18,17 +18,15 @@ import java.util.Set;
 public class Artist extends RoleDetails {
 
     private String artistName;
-
-    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinTable(name = "artist_song",
-            joinColumns = @JoinColumn(name = "artist_id"),
-            inverseJoinColumns = @JoinColumn(name = "song_id"))
-    private Set<Song> songs;
-
-    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinTable(name = "artist_album",
-            joinColumns = @JoinColumn(name = "artist_id"),
-            inverseJoinColumns = @JoinColumn(name = "album_id"))
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<Album> albums;
 
+
+    public void addAlbum(Album album) {
+        this.albums.add(album);
+    }
+
+    public void removeAlbum(Album album) {
+        this.albums.remove(album);
+    }
 }
