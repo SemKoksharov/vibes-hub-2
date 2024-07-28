@@ -12,6 +12,7 @@ import dev.semkoksharov.vibeshub2.repository.AlbumRepo;
 import dev.semkoksharov.vibeshub2.repository.SongRepo;
 import dev.semkoksharov.vibeshub2.repository.UserRepo;
 import org.apache.commons.io.FilenameUtils;
+import org.jboss.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -33,8 +34,7 @@ public class FileServiceImpl {
     @Value("${minio.profileDataBucket}")
     private String profileDataBucket;
 
-    private static final Set<String> AUDIO_EXTENSIONS = Set.of("mp3", "wav", "flac", "m4a");
-    private static final Set<String> IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif");
+    public static final Logger LOGGER = Logger.getLogger(SongServiceImpl.class);
 
     @Autowired
     public FileServiceImpl(MinIOServiceImpl minIOService, SongRepo songRepo, AlbumRepo albumRepo, UserRepo userRepo) {
@@ -54,7 +54,6 @@ public class FileServiceImpl {
         } catch (FilesNotUploadedException e) {
             uploadResult.put(originalFilename, "[Upload error]" + e.getMessage());
         }
-
         return uploadResult;
     }
 
@@ -64,31 +63,18 @@ public class FileServiceImpl {
 
     public Map<String, String> multiUploadFiles(List<MultipartFile> files, List<Uploadable> entities, FileType fileType) {
 
-        Map<String, String> errors = new HashMap<>();
         List<String> destinationFolderNames = new ArrayList<>();
         String bucketName = determineBucket(fileType);
 
         for (int i = 0; i < files.size(); i++) {
             Uploadable entity = entities.get(i);
-            MultipartFile file = files.get(i);
-            String originalFilename = file.getOriginalFilename();
-            String extension = Objects.requireNonNull(FilenameUtils.getExtension(originalFilename)).toLowerCase();
 
-            if (!isValidExtension(extension, fileType)) {
-                errors.put(originalFilename, "[Upload error] Unsupported format");
-                continue;
-            }
-
-            try {
-                String destinationFolderName = determineDestinationFolder(entity, fileType);
-                destinationFolderNames.add(destinationFolderName);
-            } catch (Exception e) {
-                errors.put(originalFilename, "[Upload error] " + e.getMessage());
-            }
+            String destinationFolderName = determineDestinationFolder(entity, fileType);
+            destinationFolderNames.add(destinationFolderName);
         }
 
-        Map<String, String> uploadResultMap = uploadFiles(files, destinationFolderNames, bucketName);
-        uploadResultMap.putAll(errors);
+        Map<String, String> uploadResultMap = this.uploadFiles(files, destinationFolderNames, bucketName);
+
         return uploadResultMap;
     }
 
@@ -111,9 +97,14 @@ public class FileServiceImpl {
         return resultMap;
     }
 
+    public String getUrl(String bucketName, String minioPath, boolean isTemporary, boolean isShort){
+        return minIOService.getUrl(bucketName, minioPath, isTemporary, isShort);
+    }
+
     public String getTempUrl(String minioPath, String bucketName, boolean isShort) {
         return minIOService.getUrl(bucketName, minioPath, true, isShort);
     }
+
     public String getShortUrl(String minioPath, String bucketName) {
         return minIOService.getUrl(bucketName, minioPath, false, true);
     }
@@ -124,13 +115,6 @@ public class FileServiceImpl {
 
     private String determineBucket(FileType fileType) {
         return fileType == FileType.PROFILE_PICTURE ? profileDataBucket : musicBucket;
-    }
-
-    private boolean isValidExtension(String extension, FileType fileType) {
-        return switch (fileType) {
-            case AUDIO -> AUDIO_EXTENSIONS.contains(extension);
-            case ALBUM_COVER, PROFILE_PICTURE -> IMAGE_EXTENSIONS.contains(extension);
-        };
     }
 
     private String determineDestinationFolder(Uploadable entity, FileType fileType) {

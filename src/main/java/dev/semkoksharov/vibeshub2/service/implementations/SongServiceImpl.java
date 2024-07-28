@@ -6,6 +6,7 @@ import dev.semkoksharov.vibeshub2.dto.song.SongDTO;
 import dev.semkoksharov.vibeshub2.dto.song.SongResponseDTO;
 import dev.semkoksharov.vibeshub2.exceptions.EntityUpdaterException;
 import dev.semkoksharov.vibeshub2.exceptions.FilesNotUploadedException;
+import dev.semkoksharov.vibeshub2.exceptions.UrlShorterException;
 import dev.semkoksharov.vibeshub2.interfaces.Uploadable;
 import dev.semkoksharov.vibeshub2.model.Album;
 import dev.semkoksharov.vibeshub2.model.Genre;
@@ -16,6 +17,7 @@ import dev.semkoksharov.vibeshub2.repository.GenreRepo;
 import dev.semkoksharov.vibeshub2.repository.SongRepo;
 import dev.semkoksharov.vibeshub2.service.interfaces.SongService;
 import dev.semkoksharov.vibeshub2.utils.EntityUpdater;
+import org.apache.commons.io.FilenameUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,10 +155,10 @@ public class SongServiceImpl implements SongService {
             throw new FilesNotUploadedException(errorMessage);
         }
 
-        Map<String, String> uploadResult = new HashMap<>();
+        Map<String, String> finalResult = new HashMap<>();
         List<MultipartFile> validFiles = new ArrayList<>();
         List<Uploadable> validEntities = new ArrayList<>();
-        Map<String, Long> filenameToIdMap = new HashMap<>();
+        FileType fileType = FileType.AUDIO;
 
         LOGGER.info("Starting audio upload process");
         LOGGER.debug("Number of files: {}", files.size());
@@ -166,14 +168,19 @@ public class SongServiceImpl implements SongService {
             MultipartFile file = files.get(i);
             Long songId = ids.get(i);
             String filename = file.getOriginalFilename();
-            filenameToIdMap.put(filename, songId);
+            String extension = Objects.requireNonNull(FilenameUtils.getExtension(filename)).toLowerCase();
+
+            if (extension.isBlank() || ! fileType.validExtensions.contains(extension)) {
+                finalResult.put(filename, "[Upload error] Unsupported format. Supported formats: " + fileType.validExtensions.toString());
+                continue;
+            }
 
             LOGGER.debug("Processing file: {} with id: {}", filename, songId);
 
             Optional<Song> songOpt = songRepo.findById(songId);
             if (songOpt.isEmpty()) {
                 LOGGER.error("Song entity with id {} is not found in the database! File {} cannot be uploaded", songId, filename);
-                uploadResult.put(filename, "[Upload error] Song entity with id " + songId + " is not found in the database! File cannot be uploaded");
+                finalResult.put(filename, "[Upload error] Song entity with id " + songId + " is not found in the database! File cannot be uploaded");
             } else {
                 validFiles.add(file);
                 validEntities.add(songOpt.get());
@@ -181,15 +188,15 @@ public class SongServiceImpl implements SongService {
         }
 
         if (validFiles.isEmpty()) {
-            return uploadResult;
+            return finalResult;
         }
 
-        Map<String, String> uploadFilesResult = fileService.multiUploadFiles(validFiles, validEntities, FileType.AUDIO);
+        Map<String, String> finalResults = fileService.multiUploadFiles(validFiles, validEntities, fileType);
 
-        assignUploadResultsToEntities(validFiles, validEntities, uploadFilesResult, uploadResult);
+        assignUploadResultsToEntities(validFiles, validEntities, finalResults, finalResult);
 
         LOGGER.info("Audio upload process completed");
-        return uploadResult;
+        return finalResult;
     }
 
     private void assignUploadResultsToEntities(List<MultipartFile> validFiles, List<Uploadable> validEntities, Map<String, String> uploadFilesResult, Map<String, String> uploadResult) {
@@ -199,15 +206,21 @@ public class SongServiceImpl implements SongService {
             Song song = (Song) validEntities.get(i);
 
             if (uploadFilesResult.containsKey(filename)) {
-                String result = uploadFilesResult.get(filename);
+                String minioPath = uploadFilesResult.get(filename);
 
-                if (result.startsWith("[Upload error]")) {
+                if (minioPath.startsWith("[Upload error]")) {
                     LOGGER.error("Failed to upload file: '{}'", filename);
-                    uploadResult.put(filename, result);
+                    uploadResult.put(filename, minioPath);
                 } else {
-                    String minioPath = result;
+                    String directUrl;
+                    try {
+                        directUrl = fileService.getShortUrl(minioPath, musicBucket);
+                    } catch (UrlShorterException e){
+                        directUrl = fileService.getDirectUrl(minioPath, musicBucket);
+                        LOGGER.warn("[URL shortening error] Full format URL will be used: {}", directUrl);
+                    }
                     song.setMinioPath(minioPath);
-                    song.setDirectUrl(fileService.getShortUrl(minioPath, musicBucket));
+                    song.setDirectUrl(directUrl);
                     songRepo.save(song);
                     uploadResult.put(filename, song.getDirectUrl());
 
@@ -220,7 +233,6 @@ public class SongServiceImpl implements SongService {
             }
         }
     }
-
 
     private SongResponseDTO mapToResponseDTO(Song song, Album album, Genre genre) {
         SongResponseDTO responseDTO = modelMapper.map(song, SongResponseDTO.class);
