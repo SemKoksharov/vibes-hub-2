@@ -19,5 +19,7 @@ public interface SongService {
     SongResponseDTO updateSong(Long id, SongDTO songDTO);
 
     Map<String, String> uploadAudio(List<MultipartFile> files, List<Long> ids);
+
+    Map<String, String> multiDeleteAudioFromBlobStorage(List<Long> songIDs);
 }
 

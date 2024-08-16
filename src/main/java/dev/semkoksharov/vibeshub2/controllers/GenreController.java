@@ -1,16 +1,17 @@
 package dev.semkoksharov.vibeshub2.controllers;
 
+import dev.semkoksharov.vibeshub2.dto.forms.BaseResponseForm;
+import dev.semkoksharov.vibeshub2.dto.forms.ResponseForm;
 import dev.semkoksharov.vibeshub2.dto.genre.GenreDTO;
 import dev.semkoksharov.vibeshub2.dto.genre.GenreResponseDTO;
 import dev.semkoksharov.vibeshub2.service.interfaces.GenreService;
+import dev.semkoksharov.vibeshub2.utils.DateTimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
-import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
 
 @RestController
 @RequestMapping("/api/genres")
@@ -24,44 +25,72 @@ public class GenreController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<GenreResponseDTO> getGenreById(@PathVariable  Long id){
+    public ResponseEntity<BaseResponseForm> getGenreById(@PathVariable Long id) {
         GenreResponseDTO genre = genreService.getGenreById(id);
 
-        return ResponseEntity.ok(genre);
+        BaseResponseForm genreWasFound = new ResponseForm(HttpStatus.OK.toString(),
+                "The genre was found",
+                DateTimeUtil.getFormattedTimestamp(),
+                genre);
+
+        return ResponseEntity.ok(genreWasFound);
     }
 
     @GetMapping
-    public ResponseEntity<List<GenreResponseDTO>> getAllGenres() {
+    public ResponseEntity<BaseResponseForm> getAllGenres() {
         List<GenreResponseDTO> genres = genreService.getAllGenres();
 
-        return ResponseEntity.ok(genres);
+        BaseResponseForm genresHaveBeenFound = new ResponseForm(HttpStatus.OK.toString(),
+                "Genres found: " + genres.size(),
+                DateTimeUtil.getFormattedTimestamp(),
+                genres);
+
+        return ResponseEntity.ok(genresHaveBeenFound);
     }
 
     @PostMapping
-    public ResponseEntity<GenreResponseDTO> createGenre(@RequestBody GenreDTO genreDTO) {
+    public ResponseEntity<BaseResponseForm> createGenre(@RequestBody GenreDTO genreDTO) {
         GenreResponseDTO createdGenre = genreService.createGenre(genreDTO);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdGenre);
+        BaseResponseForm genreWasCreated = new ResponseForm(HttpStatus.CREATED.toString(),
+                "The genre was created",
+                DateTimeUtil.getFormattedTimestamp(),
+                createdGenre);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(genreWasCreated);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<GenreResponseDTO> updateGenre(@PathVariable  Long id, GenreDTO genreDTO){
+    public ResponseEntity<BaseResponseForm> updateGenre(@PathVariable Long id, GenreDTO genreDTO) {
         GenreResponseDTO genre = genreService.updateGenre(id, genreDTO);
 
-        return ResponseEntity.ok(genre);
+        BaseResponseForm genreWasUpdated = new ResponseForm(HttpStatus.OK.toString(),
+                "The genre was updated",
+                DateTimeUtil.getFormattedTimestamp(),
+                genre);
+
+        return ResponseEntity.ok(genreWasUpdated);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteGenreById(@PathVariable Long id) {
+    public ResponseEntity<BaseResponseForm> deleteGenreById(@PathVariable Long id) {
         genreService.deleteGenreById(id);
 
-        return ResponseEntity.ok("Genre with id " + id + " was deleted");
+        BaseResponseForm genreWasDeleted = new ResponseForm(HttpStatus.OK.toString(),
+                "Genre with id " + id + " was deleted",
+                DateTimeUtil.getFormattedTimestamp());
+
+        return ResponseEntity.ok(genreWasDeleted);
     }
 
     @DeleteMapping
-    public ResponseEntity<String> deleteAllGenres() {
+    public ResponseEntity<BaseResponseForm> deleteAllGenres() {
         genreService.deleteAllGenres();
 
-        return ResponseEntity.ok("All genres have been deleted");
+        BaseResponseForm allGenresHaveBeenDeleted = new ResponseForm(HttpStatus.OK.toString(),
+                "All genres have been deleted",
+                DateTimeUtil.getFormattedTimestamp());
+
+        return ResponseEntity.ok(allGenresHaveBeenDeleted);
     }
 }

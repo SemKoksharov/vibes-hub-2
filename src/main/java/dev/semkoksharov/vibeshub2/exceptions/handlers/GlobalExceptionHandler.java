@@ -2,6 +2,7 @@ package dev.semkoksharov.vibeshub2.exceptions.handlers;
 
 import dev.semkoksharov.vibeshub2.dto.forms.ErrorResponseForm;
 import dev.semkoksharov.vibeshub2.exceptions.*;
+import dev.semkoksharov.vibeshub2.utils.DateTimeUtil;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +18,6 @@ import java.util.Date;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
-
-    private final String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(IllegalArgumentException.class)
@@ -123,7 +122,7 @@ public class GlobalExceptionHandler {
         String exception = ex.getClass().toString();
         String statusString = status.toString();
         String message = ex.getMessage();
-        String timestamp = this.timestamp;
+        String timestamp = DateTimeUtil.getFormattedTimestamp();
         String stackTrace = Arrays.toString(ex.getStackTrace());
 
         ErrorResponseForm errorResponseEntity = new ErrorResponseForm(exception, statusString, message, timestamp, stackTrace);

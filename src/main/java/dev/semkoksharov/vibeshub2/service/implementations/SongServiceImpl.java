@@ -17,6 +17,7 @@ import dev.semkoksharov.vibeshub2.repository.GenreRepo;
 import dev.semkoksharov.vibeshub2.repository.SongRepo;
 import dev.semkoksharov.vibeshub2.service.interfaces.SongService;
 import dev.semkoksharov.vibeshub2.utils.EntityUpdater;
+import jakarta.persistence.EntityNotFoundException;
 import org.apache.commons.io.FilenameUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -199,6 +200,36 @@ public class SongServiceImpl implements SongService {
         return finalResult;
     }
 
+    @Override
+    public Map<String, String> multiDeleteAudioFromBlobStorage(List<Long> songIDs) {
+        Map<String, String> delResult = new HashMap<>();
+
+        for (Long songID : songIDs) {
+            try {
+                if (deleteAudioFromBlobStorage(songID)) {
+                    delResult.put("[Song id] " + songID.toString(), "OK");
+                }
+            } catch (Exception e) {
+                delResult.put("[Song id] " + songID.toString(), "[Delete error]" + e.getMessage());
+            }
+        }
+        return delResult;
+    }
+
+    private boolean deleteAudioFromBlobStorage(Long songID) throws Exception {
+        Song toDelete = songRepo.findById(songID).orElseThrow(
+                () -> new EntityNotFoundException("Song is not found in the database")
+        );
+        String minioPath = toDelete.getMinioPath();
+
+        if (minioPath == null) {
+            //todo change exception below
+            throw new Exception("Song data found in database but not in blob storage. It can't be deleted");
+        }
+
+        return minIOService.deleteFile(musicBucket, minioPath);
+    }
+
     private void assignUploadResultsToEntities(List<MultipartFile> validFiles, List<Uploadable> validEntities, Map<String, String> uploadFilesResult, Map<String, String> uploadResult) {
         for (int i = 0; i < validFiles.size(); i++) {
             MultipartFile file = validFiles.get(i);
@@ -215,7 +246,7 @@ public class SongServiceImpl implements SongService {
                     String directUrl;
                     try {
                         directUrl = fileService.getShortUrl(minioPath, musicBucket);
-                    } catch (UrlShorterException e){
+                    } catch (UrlShorterException e) {
                         directUrl = fileService.getDirectUrl(minioPath, musicBucket);
                         LOGGER.warn("[URL shortening error] Full format URL will be used: {}", directUrl);
                     }
