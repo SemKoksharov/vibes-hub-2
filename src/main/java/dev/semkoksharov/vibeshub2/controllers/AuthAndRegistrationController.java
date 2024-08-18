@@ -44,14 +44,14 @@ public class AuthAndRegistrationController {
     public ResponseEntity<BaseResponseForm> createUser(@RequestBody UserRegistrationDTO user) {
         UserResponseDTO newUser = userService.saveUser(user);
 
-        BaseResponseForm userWasCreated = new ResponseForm(
+        BaseResponseForm response = new ResponseForm(
                 HttpStatus.OK.toString(),
-                "User was created successfully",
+                "User created successfully.",
                 DateTimeUtil.getFormattedTimestamp(),
                 newUser
         );
 
-        return ResponseEntity.status(HttpStatus.OK).body(userWasCreated);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @PostMapping("/login")
@@ -63,16 +63,16 @@ public class AuthAndRegistrationController {
         if (authentication.isAuthenticated()) {
             String token = jwtService.generateToken(userDetailsService.loadUserByUsername(loginForm.username()));
 
-            BaseResponseForm loginSuccess = new ResponseForm(
+            BaseResponseForm response = new ResponseForm(
                     HttpStatus.OK.toString(),
-                    "Login successful",
+                    "Login successful. Token is available in the 'data' section below.",
                     DateTimeUtil.getFormattedTimestamp(),
                     token
             );
 
-            return ResponseEntity.ok(loginSuccess);
+            return ResponseEntity.ok(response);
         } else {
-            throw new UsernameNotFoundException("Invalid credentials");
+            throw new UsernameNotFoundException("Invalid credentials.");
         }
     }
 }

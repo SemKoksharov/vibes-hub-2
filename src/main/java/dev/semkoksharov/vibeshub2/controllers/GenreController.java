@@ -28,69 +28,81 @@ public class GenreController {
     public ResponseEntity<BaseResponseForm> getGenreById(@PathVariable Long id) {
         GenreResponseDTO genre = genreService.getGenreById(id);
 
-        BaseResponseForm genreWasFound = new ResponseForm(HttpStatus.OK.toString(),
-                "The genre was found",
+        BaseResponseForm response = new ResponseForm(
+                HttpStatus.OK.toString(),
+                "Genre found successfully.",
                 DateTimeUtil.getFormattedTimestamp(),
-                genre);
+                genre
+        );
 
-        return ResponseEntity.ok(genreWasFound);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
     public ResponseEntity<BaseResponseForm> getAllGenres() {
         List<GenreResponseDTO> genres = genreService.getAllGenres();
 
-        BaseResponseForm genresHaveBeenFound = new ResponseForm(HttpStatus.OK.toString(),
-                "Genres found: " + genres.size(),
+        BaseResponseForm response = new ResponseForm(
+                HttpStatus.OK.toString(),
+                genres.size() + " genre(s) found successfully.",
                 DateTimeUtil.getFormattedTimestamp(),
-                genres);
+                genres
+        );
 
-        return ResponseEntity.ok(genresHaveBeenFound);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping
     public ResponseEntity<BaseResponseForm> createGenre(@RequestBody GenreDTO genreDTO) {
         GenreResponseDTO createdGenre = genreService.createGenre(genreDTO);
 
-        BaseResponseForm genreWasCreated = new ResponseForm(HttpStatus.CREATED.toString(),
-                "The genre was created",
+        BaseResponseForm response = new ResponseForm(
+                HttpStatus.CREATED.toString(),
+                "Genre created successfully.",
                 DateTimeUtil.getFormattedTimestamp(),
-                createdGenre);
+                createdGenre
+        );
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(genreWasCreated);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BaseResponseForm> updateGenre(@PathVariable Long id, GenreDTO genreDTO) {
-        GenreResponseDTO genre = genreService.updateGenre(id, genreDTO);
+    public ResponseEntity<BaseResponseForm> updateGenre(@PathVariable Long id, @RequestBody GenreDTO genreDTO) {
+        GenreResponseDTO updatedGenre = genreService.updateGenre(id, genreDTO);
 
-        BaseResponseForm genreWasUpdated = new ResponseForm(HttpStatus.OK.toString(),
-                "The genre was updated",
+        BaseResponseForm response = new ResponseForm(
+                HttpStatus.OK.toString(),
+                "Genre updated successfully.",
                 DateTimeUtil.getFormattedTimestamp(),
-                genre);
+                updatedGenre
+        );
 
-        return ResponseEntity.ok(genreWasUpdated);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<BaseResponseForm> deleteGenreById(@PathVariable Long id) {
         genreService.deleteGenreById(id);
 
-        BaseResponseForm genreWasDeleted = new ResponseForm(HttpStatus.OK.toString(),
-                "Genre with id " + id + " was deleted",
-                DateTimeUtil.getFormattedTimestamp());
+        BaseResponseForm response = new ResponseForm(
+                HttpStatus.OK.toString(),
+                "Genre with ID " + id + " has been deleted successfully.",
+                DateTimeUtil.getFormattedTimestamp()
+        );
 
-        return ResponseEntity.ok(genreWasDeleted);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping
     public ResponseEntity<BaseResponseForm> deleteAllGenres() {
         genreService.deleteAllGenres();
 
-        BaseResponseForm allGenresHaveBeenDeleted = new ResponseForm(HttpStatus.OK.toString(),
-                "All genres have been deleted",
-                DateTimeUtil.getFormattedTimestamp());
+        BaseResponseForm response = new ResponseForm(
+                HttpStatus.OK.toString(),
+                "All genres have been deleted successfully.",
+                DateTimeUtil.getFormattedTimestamp()
+        );
 
-        return ResponseEntity.ok(allGenresHaveBeenDeleted);
+        return ResponseEntity.ok(response);
     }
 }

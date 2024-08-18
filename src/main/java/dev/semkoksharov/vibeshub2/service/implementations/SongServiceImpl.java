@@ -202,7 +202,7 @@ public class SongServiceImpl implements SongService {
 
     @Override
     public Map<String, String> multiDeleteAudioFromBlobStorage(List<Long> songIDs) {
-        Map<String, String> delResult = new HashMap<>();
+        Map<String, String> delResult = new TreeMap<>();
 
         for (Long songID : songIDs) {
             try {
@@ -210,7 +210,7 @@ public class SongServiceImpl implements SongService {
                     delResult.put("[Song id] " + songID.toString(), "OK");
                 }
             } catch (Exception e) {
-                delResult.put("[Song id] " + songID.toString(), "[Delete error]" + e.getMessage());
+                delResult.put("[Song id] " + songID.toString(), "[Delete error] " + e.getMessage());
             }
         }
         return delResult;

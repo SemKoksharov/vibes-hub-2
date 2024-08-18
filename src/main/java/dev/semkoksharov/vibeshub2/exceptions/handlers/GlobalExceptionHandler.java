@@ -7,6 +7,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -112,8 +113,14 @@ public class GlobalExceptionHandler {
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(FilesNotUploadedException.class)
-    public ResponseEntity<ErrorResponseForm> handleMultiUploadFailedException(FilesNotUploadedException ex) {
+    public ResponseEntity<ErrorResponseForm> handleMultiUploadFailedExceptions(FilesNotUploadedException ex) {
         return createErrorResponse(ex, HttpStatus.BAD_REQUEST);
+
+    }
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ErrorResponseForm> handleUsernameNotFoundExceptions(UsernameNotFoundException ex) {
+        return createErrorResponse(ex, HttpStatus.NOT_FOUND);
 
     }
 

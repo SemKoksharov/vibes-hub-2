@@ -4,13 +4,16 @@ import dev.semkoksharov.vibeshub2.dto.forms.BaseResponseForm;
 import dev.semkoksharov.vibeshub2.dto.forms.ResponseForm;
 import dev.semkoksharov.vibeshub2.dto.song.SongDTO;
 import dev.semkoksharov.vibeshub2.dto.song.SongResponseDTO;
-import dev.semkoksharov.vibeshub2.service.implementations.SongServiceImpl;
+import dev.semkoksharov.vibeshub2.service.interfaces.AudioStreamingService;
 import dev.semkoksharov.vibeshub2.service.interfaces.SongService;
 import dev.semkoksharov.vibeshub2.utils.DateTimeUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,80 +26,61 @@ import java.util.Map;
 public class SongController {
 
     private final SongService songService;
+    private final AudioStreamingService audioStreamingService;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(SongController.class);
 
     @Autowired
-    public SongController(SongServiceImpl songService) {
+    public SongController(SongService songService, AudioStreamingService audioStreamingService) {
         this.songService = songService;
+        this.audioStreamingService = audioStreamingService;
     }
 
-    @PostMapping
-    public ResponseEntity<BaseResponseForm> createSong(@RequestBody SongDTO songDTO) {
-        SongResponseDTO createdSong = songService.createSong(songDTO);
-
-        BaseResponseForm songWasCreated = new ResponseForm(
-                HttpStatus.CREATED.toString(),
-                "The song was created",
-                DateTimeUtil.getFormattedTimestamp(),
-                createdSong
-        );
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(songWasCreated);
+    @GetMapping(value = "/stream/{id}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public void streamAudio(@PathVariable Long id, HttpServletRequest request, HttpServletResponse response) {
+        audioStreamingService.streamAudio(id, request, response);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<BaseResponseForm> getSongById(@PathVariable Long id) {
         SongResponseDTO song = songService.getSongById(id);
 
-        BaseResponseForm songWasFound = new ResponseForm(
+        BaseResponseForm response = new ResponseForm(
                 HttpStatus.OK.toString(),
-                "The song was found",
+                "Song found successfully.",
                 DateTimeUtil.getFormattedTimestamp(),
                 song
         );
 
-        return ResponseEntity.ok(songWasFound);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
     public ResponseEntity<BaseResponseForm> getAllSongs() {
         List<SongResponseDTO> songs = songService.getAllSongs();
 
-        BaseResponseForm songsWereFound = new ResponseForm(
+        BaseResponseForm response = new ResponseForm(
                 HttpStatus.OK.toString(),
-                "The songs were found",
+                songs.size() + " song(s) found successfully.",
                 DateTimeUtil.getFormattedTimestamp(),
                 songs
         );
 
-        return ResponseEntity.ok(songsWereFound);
+        return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<BaseResponseForm> updateSong(@PathVariable Long id, @RequestBody SongDTO songDTO) {
-        SongResponseDTO updatedSong = songService.updateSong(id, songDTO);
+    @PostMapping
+    public ResponseEntity<BaseResponseForm> createSong(@RequestBody SongDTO songDTO) {
+        SongResponseDTO createdSong = songService.createSong(songDTO);
 
-        BaseResponseForm songWasUpdated = new ResponseForm(
-                HttpStatus.OK.toString(),
-                "The song was updated",
+        BaseResponseForm response = new ResponseForm(
+                HttpStatus.CREATED.toString(),
+                "Song created successfully.",
                 DateTimeUtil.getFormattedTimestamp(),
-                updatedSong
+                createdSong
         );
 
-        return ResponseEntity.ok(songWasUpdated);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<BaseResponseForm> deleteSongById(@PathVariable Long id) {
-        songService.deleteSongById(id);
-
-        BaseResponseForm songWasDeleted = new ResponseForm(
-                HttpStatus.OK.toString(),
-                "Song with id " + id + " has been deleted",
-                DateTimeUtil.getFormattedTimestamp()
-        );
-
-        return ResponseEntity.ok(songWasDeleted);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/upload")
@@ -104,29 +88,56 @@ public class SongController {
         LOGGER.info("Received upload request with {} files and {} ids", audio.size(), ids.size());
 
         Map<String, String> uploadResult = songService.uploadAudio(audio, ids);
-        LOGGER.info("Files uploaded successfully");
+        LOGGER.info("Files uploaded successfully.");
 
-        BaseResponseForm uploadSuccessful = new ResponseForm(
+        BaseResponseForm response = new ResponseForm(
                 HttpStatus.OK.toString(),
-                "You can see the upload results below in the 'data' subsection",
+                "Upload completed successfully. See details in the 'data' section.",
                 DateTimeUtil.getFormattedTimestamp(),
                 uploadResult
         );
 
-        return ResponseEntity.ok(uploadSuccessful);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<BaseResponseForm> updateSong(@PathVariable Long id, @RequestBody SongDTO songDTO) {
+        SongResponseDTO updatedSong = songService.updateSong(id, songDTO);
+
+        BaseResponseForm response = new ResponseForm(
+                HttpStatus.OK.toString(),
+                "Song updated successfully.",
+                DateTimeUtil.getFormattedTimestamp(),
+                updatedSong
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<BaseResponseForm> deleteSongById(@PathVariable Long id) {
+        songService.deleteSongById(id);
+
+        BaseResponseForm response = new ResponseForm(
+                HttpStatus.OK.toString(),
+                "Song with ID " + id + " has been deleted successfully.",
+                DateTimeUtil.getFormattedTimestamp()
+        );
+
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/del")
-    public ResponseEntity<BaseResponseForm> deleteSongFromMinio(@RequestParam List<Long> songIDs){
+    public ResponseEntity<BaseResponseForm> deleteSongFromMinio(@RequestParam List<Long> songIDs) {
         Map<String, String> delResult = songService.multiDeleteAudioFromBlobStorage(songIDs);
 
-        BaseResponseForm deleted = new ResponseForm(
+        BaseResponseForm response = new ResponseForm(
                 HttpStatus.OK.toString(),
-                "You can see the delete results below in the 'data' subsection",
+                "Deletion completed successfully. See details in the 'data' section.",
                 DateTimeUtil.getFormattedTimestamp(),
                 delResult
-                );
+        );
 
-        return ResponseEntity.ok(deleted);
+        return ResponseEntity.ok(response);
     }
 }
