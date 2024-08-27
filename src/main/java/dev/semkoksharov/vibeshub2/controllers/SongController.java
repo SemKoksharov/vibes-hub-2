@@ -129,7 +129,7 @@ public class SongController {
 
     @DeleteMapping("/del")
     public ResponseEntity<BaseResponseForm> deleteSongFromMinio(@RequestParam List<Long> songIDs) {
-        Map<String, String> delResult = songService.multiDeleteAudioFromBlobStorage(songIDs);
+        Map<String, String> delResult = songService.deleteAudioFromBlobStorage(songIDs);
 
         BaseResponseForm response = new ResponseForm(
                 HttpStatus.OK.toString(),

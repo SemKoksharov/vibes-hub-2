@@ -52,9 +52,23 @@ public class UserEntity extends BaseEntity implements UserDetails, Uploadable {
 
     private String country;
 
+    @JsonIgnore
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "user")
+    private Set<Playlist> playlists;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of();
+    }
+
+    public void addPlaylistToUser(Playlist playlist){
+        this.playlists.add(playlist);
+        playlist.setUser(this);
+    }
+
+    public void deletePlaylistFromUser(Playlist playlist){
+        this.playlists.remove(playlist);
+        playlist.setUser(null);
     }
 
 }

@@ -20,6 +20,6 @@ public interface SongService {
 
     Map<String, String> uploadAudio(List<MultipartFile> files, List<Long> ids);
 
-    Map<String, String> multiDeleteAudioFromBlobStorage(List<Long> songIDs);
+    Map<String, String> deleteAudioFromBlobStorage(List<Long> songIDs);
 }
 

@@ -19,7 +19,6 @@ public class UserResponseDTO {
     private String surname;
     private String username;
     private String email;
-    private String password;
     private String telNumber;
     private String urlPhoto;
     private Set<UserRoles> userRoles;

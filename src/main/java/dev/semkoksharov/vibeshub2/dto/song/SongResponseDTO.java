@@ -17,5 +17,6 @@ public class SongResponseDTO {
     private String streamingUrl;
     private AlbumSimpleDTO album;
     private GenreSimpleDTO genre;
+    private String dynamicStreamLink;
 
 }

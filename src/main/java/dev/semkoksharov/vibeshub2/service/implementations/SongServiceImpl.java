@@ -24,9 +24,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestOperations;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -42,6 +47,7 @@ public class SongServiceImpl implements SongService {
     private final EntityUpdater entityUpdater;
     private final FileServiceImpl fileService;
     private final MinIOServiceImpl minIOService;
+    private final RestOperations restTemplate;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SongServiceImpl.class);
 
@@ -49,7 +55,7 @@ public class SongServiceImpl implements SongService {
     private String musicBucket;
 
     @Autowired
-    public SongServiceImpl(SongRepo songRepo, AlbumRepo albumRepo, GenreRepo genreRepo, ModelMapper modelMapper, EntityUpdater entityUpdater, FileServiceImpl fileService, MinIOServiceImpl minIOService) {
+    public SongServiceImpl(SongRepo songRepo, AlbumRepo albumRepo, GenreRepo genreRepo, ModelMapper modelMapper, EntityUpdater entityUpdater, FileServiceImpl fileService, MinIOServiceImpl minIOService, RestTemplate restTemplate) {
         this.songRepo = songRepo;
         this.albumRepo = albumRepo;
         this.genreRepo = genreRepo;
@@ -57,6 +63,7 @@ public class SongServiceImpl implements SongService {
         this.entityUpdater = entityUpdater;
         this.fileService = fileService;
         this.minIOService = minIOService;
+        this.restTemplate = restTemplate;
     }
 
     @Override
@@ -74,15 +81,18 @@ public class SongServiceImpl implements SongService {
         album.addSong(song);
 
         Song savedSong = songRepo.save(song);
-        return mapToResponseDTO(savedSong, album, genre);
+        return mapToResponseDTO(savedSong, album, genre, false);
     }
 
     @Override
     public SongResponseDTO getSongById(Long id) {
+
         Song song = songRepo.findById(id).orElseThrow(() ->
                 new IllegalArgumentException("[Get error] Song with id " + id + " is not found"));
 
-        return mapToResponseDTO(song, song.getAlbum(), song.getGenre());
+        // addDynamicStreamLinkToDTO(song) below returns true, if exists a link to audio file in blob storage
+        // this boolean will add(or no) a dynamically created link for audio streaming (play audio)
+        return mapToResponseDTO(song, song.getAlbum(), song.getGenre(), addDynamicStreamLinkToDTO(song));
     }
 
     @Override
@@ -92,14 +102,17 @@ public class SongServiceImpl implements SongService {
             throw new IllegalArgumentException("[Get error] No songs found in the database");
         }
         return songs.stream()
-                .map(song -> mapToResponseDTO(song, song.getAlbum(), song.getGenre()))
+
+                // addDynamicStreamLinkToDTO(song) below returns true, if exists a link to audio file in blob storage
+                // this boolean will add(or no) a dynamically created link for audio streaming (play audio)
+                .map(song -> mapToResponseDTO(song, song.getAlbum(), song.getGenre(), addDynamicStreamLinkToDTO(song)))
                 .collect(Collectors.toList());
     }
 
     @Override
     public void deleteSongById(Long id) {
         if (!songRepo.existsById(id)) {
-            throw new IllegalArgumentException("[Delete error] Song with id " + id + " is not found");
+            throw new IllegalArgumentException("[Delete error] Song with id " + id + " not found");
         }
         songRepo.deleteById(id);
     }
@@ -144,7 +157,9 @@ public class SongServiceImpl implements SongService {
 
         Song updatedSong = songRepo.saveAndFlush(toUpdate);
 
-        return mapToResponseDTO(updatedSong, toUpdate.getAlbum(), toUpdate.getGenre());
+        // addDynamicStreamLinkToDTO(song) below returns true, if exists a link to audio file in blob storage
+        // this boolean will add(or no) a dynamically created link for audio streaming (play audio)
+        return mapToResponseDTO(updatedSong, toUpdate.getAlbum(), toUpdate.getGenre(), addDynamicStreamLinkToDTO(updatedSong));
     }
 
     @Override
@@ -171,7 +186,7 @@ public class SongServiceImpl implements SongService {
             String filename = file.getOriginalFilename();
             String extension = Objects.requireNonNull(FilenameUtils.getExtension(filename)).toLowerCase();
 
-            if (extension.isBlank() || ! fileType.validExtensions.contains(extension)) {
+            if (extension.isBlank() || !fileType.validExtensions.contains(extension)) {
                 finalResult.put(filename, "[Upload error] Unsupported format. Supported formats: " + fileType.validExtensions.toString());
                 continue;
             }
@@ -201,7 +216,7 @@ public class SongServiceImpl implements SongService {
     }
 
     @Override
-    public Map<String, String> multiDeleteAudioFromBlobStorage(List<Long> songIDs) {
+    public Map<String, String> deleteAudioFromBlobStorage(List<Long> songIDs) {
         Map<String, String> delResult = new TreeMap<>();
 
         for (Long songID : songIDs) {
@@ -237,25 +252,25 @@ public class SongServiceImpl implements SongService {
             Song song = (Song) validEntities.get(i);
 
             if (uploadFilesResult.containsKey(filename)) {
-                String minioPath = uploadFilesResult.get(filename);
+                String singleUploadResult = uploadFilesResult.get(filename);
 
-                if (minioPath.startsWith("[Upload error]")) {
+                if (singleUploadResult.startsWith("[Upload error]")) {
                     LOGGER.error("Failed to upload file: '{}'", filename);
-                    uploadResult.put(filename, minioPath);
+                    uploadResult.put(filename, singleUploadResult);
                 } else {
                     String directUrl;
                     try {
-                        directUrl = fileService.getShortUrl(minioPath, musicBucket);
+                        directUrl = fileService.getShortUrl(singleUploadResult, musicBucket);
                     } catch (UrlShorterException e) {
-                        directUrl = fileService.getDirectUrl(minioPath, musicBucket);
+                        directUrl = fileService.getDirectUrl(singleUploadResult, musicBucket);
                         LOGGER.warn("[URL shortening error] Full format URL will be used: {}", directUrl);
                     }
-                    song.setMinioPath(minioPath);
+                    song.setMinioPath(singleUploadResult);
                     song.setDirectUrl(directUrl);
                     songRepo.save(song);
                     uploadResult.put(filename, song.getDirectUrl());
 
-                    LOGGER.debug("Assigned minioPath '{}' and directUrl to song with id {}, original file: '{}'", minioPath, song.getId(), filename);
+                    LOGGER.debug("Assigned minioPath '{}' and directUrl to song with id {}, original file: '{}'", singleUploadResult, song.getId(), filename);
                     LOGGER.info("Successfully uploaded and updated song with id {}, original file: '{}'", song.getId(), filename);
                 }
             } else {
@@ -265,10 +280,38 @@ public class SongServiceImpl implements SongService {
         }
     }
 
-    private SongResponseDTO mapToResponseDTO(Song song, Album album, Genre genre) {
+    private SongResponseDTO mapToResponseDTO(Song song, Album album, Genre genre, boolean addDynamicStreamLink) {
         SongResponseDTO responseDTO = modelMapper.map(song, SongResponseDTO.class);
+
         responseDTO.setAlbum(modelMapper.map(album, AlbumSimpleDTO.class));
         responseDTO.setGenre(modelMapper.map(genre, GenreSimpleDTO.class));
+
+        if (addDynamicStreamLink) {
+            String dynamicStreamLink = this.getAudioStreamingLinkDynamically(song.getId());
+            responseDTO.setDynamicStreamLink(dynamicStreamLink);
+        }
+
         return responseDTO;
+    }
+
+    private String getAudioStreamingLinkDynamically(Long songID) {
+        return ServletUriComponentsBuilder
+                .fromCurrentContextPath()
+                .path("/streamAudio/%d".formatted(songID))
+                .toUriString();
+    }
+
+    //todo check isStreamLinkValid method (not work)  :'(
+    private boolean isStreamLinkValid(String streamLink) {
+        try {
+            ResponseEntity<String> response = restTemplate.getForEntity(streamLink, String.class);
+            return response.getStatusCode() == HttpStatus.OK;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean addDynamicStreamLinkToDTO(Song song) {
+        return song.getMinioPath() != null;
     }
 }

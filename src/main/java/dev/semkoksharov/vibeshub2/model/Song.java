@@ -25,11 +25,12 @@ public class Song extends BaseEntity implements  Uploadable{
     private Album album;
     private int duration;
     private String title;
-
-    // These fields refer to files in blob storage(in this case an audio file)
+    /////////////////////////////////////////////////////////////////////////////////
+    // These fields below refer to files in blob storage(in this case an audio file)
     @Lob
     @Column(columnDefinition="TEXT", length = 1000)
     private String directUrl;
     private String streamingUrl;
-    private String minioPath;
+    private String minioPath;                                                      //
+    ////////////////////////////////////////////////////////////////////////////////
 }
