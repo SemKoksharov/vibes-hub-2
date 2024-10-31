@@ -2,29 +2,27 @@ package dev.semkoksharov.vibeshub2.service.implementations;
 
 import dev.semkoksharov.vibeshub2.dto.playlist.PlaylistRequestDTO;
 import dev.semkoksharov.vibeshub2.dto.playlist.PlaylistResponseDTO;
+import dev.semkoksharov.vibeshub2.dto.playlist.PlaylistUpdateDTO;
 import dev.semkoksharov.vibeshub2.dto.user.UserSimpleDTO;
 import dev.semkoksharov.vibeshub2.exceptions.EmptyResultException;
 import dev.semkoksharov.vibeshub2.model.Playlist;
 import dev.semkoksharov.vibeshub2.model.Song;
 import dev.semkoksharov.vibeshub2.model.UserEntity;
-import dev.semkoksharov.vibeshub2.model.enums.UserRoles;
 import dev.semkoksharov.vibeshub2.repository.PlaylistRepo;
 import dev.semkoksharov.vibeshub2.repository.SongRepo;
 import dev.semkoksharov.vibeshub2.repository.UserRepo;
 import dev.semkoksharov.vibeshub2.service.interfaces.PlaylistService;
 import dev.semkoksharov.vibeshub2.utils.SecurityUtil;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.Lob;
 import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class PlaylistServiceImpl implements PlaylistService {
@@ -50,14 +48,15 @@ public class PlaylistServiceImpl implements PlaylistService {
         Playlist playlist = playlistRepo.findById(id).orElseThrow(
                 () -> new EntityNotFoundException("Playlist with id %d is not found in the database".formatted(id))
         );
+        UserEntity user = playlist.getUser();
 
-        return modelMapper.map(playlist, PlaylistResponseDTO.class);
+        return mapPlaylistToResponseDTO(playlist, user);
     }
 
     @Override
     public List<PlaylistResponseDTO> getAllPlaylists() {
         List<PlaylistResponseDTO> allPlaylists = playlistRepo.findAll().stream().map(
-                playlist -> modelMapper.map(playlist, PlaylistResponseDTO.class)
+                playlist -> mapPlaylistToResponseDTO(playlist, playlist.getUser())
         ).toList();
 
         if (allPlaylists.isEmpty()) throw new EmptyResultException("No playlists found in the database");
@@ -75,18 +74,17 @@ public class PlaylistServiceImpl implements PlaylistService {
         UserEntity user = userRepo.findById(userID).orElseThrow(
                 () -> new EntityNotFoundException("User with ID %d is not found".formatted(userID)));
 
-        if (!securityUtil.isCurrent(user)) {
+        if (! securityUtil.isCurrent(user)) {
             throw new AccessDeniedException(
-                    "Your account is not authorized for this action, "
+                    "Your account is not authorized for this action."
             );
         }
+
         Playlist playlist = modelMapper.map(playlistRequestDTO, Playlist.class);
 
         playlist.setUser(user);
         user.addPlaylistToUser(playlist);
-        playlist.setSongs(new HashSet<>(songsToAdd));
-
-        // todo extract method
+        playlist.setSongs(new LinkedList<>(songsToAdd));
 
         return mapPlaylistToResponseDTO(playlist, user);
     }
@@ -100,9 +98,34 @@ public class PlaylistServiceImpl implements PlaylistService {
         return responseDTO;
     }
 
+
+    // todo TEST THIS METHOD
     @Override
-    public PlaylistResponseDTO updatePlaylist(PlaylistRequestDTO playlistRequestDTO) {
-        return null;
+    public PlaylistResponseDTO updatePlaylist(PlaylistUpdateDTO playlistUpdateDTO, Long currentPlaylistId) {
+
+        Playlist toUpdate = playlistRepo.findById(currentPlaylistId).orElseThrow(
+                () -> new EntityNotFoundException(
+                        "Playlist with ID %d is not found in the database".formatted(currentPlaylistId))
+        );
+
+        UserEntity user = toUpdate.getUser();
+
+        if (!securityUtil.isCurrent(user)) {
+            throw new AccessDeniedException(
+                    "Your account is not authorized for this action"
+            );
+        }
+
+        String newTitle = playlistUpdateDTO.getTitle();
+        List<Song> newSongs = songRepo.findAllById(playlistUpdateDTO.getSongIDs());
+
+        toUpdate.setTitle(newTitle);
+        toUpdate.getSongs().clear();
+        toUpdate.getSongs().addAll(newSongs);
+
+        playlistRepo.saveAndFlush(toUpdate);
+
+        return mapPlaylistToResponseDTO(toUpdate, user);
     }
 
     @Override

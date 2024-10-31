@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.util.LinkedList;
 import java.util.Set;
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -27,7 +28,7 @@ public class Playlist extends BaseEntity {
             joinColumns = @JoinColumn(name = "playlist_id"),
             inverseJoinColumns = @JoinColumn(name = "song_id")
     )
-    private Set<Song> songs;
+    private LinkedList<Song> songs;
 
     public void addSongToPlaylist(Song song){
         this.songs.add(song);

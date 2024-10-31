@@ -24,12 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestOperations;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -47,7 +43,6 @@ public class SongServiceImpl implements SongService {
     private final EntityUpdater entityUpdater;
     private final FileServiceImpl fileService;
     private final MinIOServiceImpl minIOService;
-    private final RestOperations restTemplate;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SongServiceImpl.class);
 
@@ -55,7 +50,7 @@ public class SongServiceImpl implements SongService {
     private String musicBucket;
 
     @Autowired
-    public SongServiceImpl(SongRepo songRepo, AlbumRepo albumRepo, GenreRepo genreRepo, ModelMapper modelMapper, EntityUpdater entityUpdater, FileServiceImpl fileService, MinIOServiceImpl minIOService, RestTemplate restTemplate) {
+    public SongServiceImpl(SongRepo songRepo, AlbumRepo albumRepo, GenreRepo genreRepo, ModelMapper modelMapper, EntityUpdater entityUpdater, FileServiceImpl fileService, MinIOServiceImpl minIOService) {
         this.songRepo = songRepo;
         this.albumRepo = albumRepo;
         this.genreRepo = genreRepo;
@@ -63,7 +58,6 @@ public class SongServiceImpl implements SongService {
         this.entityUpdater = entityUpdater;
         this.fileService = fileService;
         this.minIOService = minIOService;
-        this.restTemplate = restTemplate;
     }
 
     @Override
@@ -81,18 +75,15 @@ public class SongServiceImpl implements SongService {
         album.addSong(song);
 
         Song savedSong = songRepo.save(song);
-        return mapToResponseDTO(savedSong, album, genre, false);
+        return mapToResponseDTO(savedSong, album, genre);
     }
 
     @Override
     public SongResponseDTO getSongById(Long id) {
-
         Song song = songRepo.findById(id).orElseThrow(() ->
                 new IllegalArgumentException("[Get error] Song with id " + id + " is not found"));
 
-        // addDynamicStreamLinkToDTO(song) below returns true, if exists a link to audio file in blob storage
-        // this boolean will add(or no) a dynamically created link for audio streaming (play audio)
-        return mapToResponseDTO(song, song.getAlbum(), song.getGenre(), addDynamicStreamLinkToDTO(song));
+        return mapToResponseDTO(song, song.getAlbum(), song.getGenre());
     }
 
     @Override
@@ -102,10 +93,7 @@ public class SongServiceImpl implements SongService {
             throw new IllegalArgumentException("[Get error] No songs found in the database");
         }
         return songs.stream()
-
-                // addDynamicStreamLinkToDTO(song) below returns true, if exists a link to audio file in blob storage
-                // this boolean will add(or no) a dynamically created link for audio streaming (play audio)
-                .map(song -> mapToResponseDTO(song, song.getAlbum(), song.getGenre(), addDynamicStreamLinkToDTO(song)))
+                .map(song -> mapToResponseDTO(song, song.getAlbum(), song.getGenre()))
                 .collect(Collectors.toList());
     }
 
@@ -157,9 +145,7 @@ public class SongServiceImpl implements SongService {
 
         Song updatedSong = songRepo.saveAndFlush(toUpdate);
 
-        // addDynamicStreamLinkToDTO(song) below returns true, if exists a link to audio file in blob storage
-        // this boolean will add(or no) a dynamically created link for audio streaming (play audio)
-        return mapToResponseDTO(updatedSong, toUpdate.getAlbum(), toUpdate.getGenre(), addDynamicStreamLinkToDTO(updatedSong));
+        return mapToResponseDTO(updatedSong, toUpdate.getAlbum(), toUpdate.getGenre());
     }
 
     @Override
@@ -280,13 +266,18 @@ public class SongServiceImpl implements SongService {
         }
     }
 
-    private SongResponseDTO mapToResponseDTO(Song song, Album album, Genre genre, boolean addDynamicStreamLink) {
+    private SongResponseDTO mapToResponseDTO(Song song, Album album, Genre genre) {
         SongResponseDTO responseDTO = modelMapper.map(song, SongResponseDTO.class);
 
         responseDTO.setAlbum(modelMapper.map(album, AlbumSimpleDTO.class));
         responseDTO.setGenre(modelMapper.map(genre, GenreSimpleDTO.class));
 
-        if (addDynamicStreamLink) {
+         /* **************************************************************************
+            if song.getMinioPath != null,
+            a dynamically created link based on current host
+            for streaming audio (playing audio) will be added to the DTO
+         ************************************************************************** */
+        if (song.getMinioPath() != null) {
             String dynamicStreamLink = this.getAudioStreamingLinkDynamically(song.getId());
             responseDTO.setDynamicStreamLink(dynamicStreamLink);
         }
@@ -297,21 +288,8 @@ public class SongServiceImpl implements SongService {
     private String getAudioStreamingLinkDynamically(Long songID) {
         return ServletUriComponentsBuilder
                 .fromCurrentContextPath()
-                .path("/streamAudio/%d".formatted(songID))
+                .path("/api/songs/stream/%d".formatted(songID))
                 .toUriString();
     }
 
-    //todo check isStreamLinkValid method (not work)  :'(
-    private boolean isStreamLinkValid(String streamLink) {
-        try {
-            ResponseEntity<String> response = restTemplate.getForEntity(streamLink, String.class);
-            return response.getStatusCode() == HttpStatus.OK;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private boolean addDynamicStreamLinkToDTO(Song song) {
-        return song.getMinioPath() != null;
-    }
 }

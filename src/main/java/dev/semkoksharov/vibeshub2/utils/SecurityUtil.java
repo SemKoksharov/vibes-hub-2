@@ -32,7 +32,6 @@ public class SecurityUtil {
     // methods for check current user///////////////////////////////////////////////////////////////////////
 
     public boolean isAuthenticated() {
-
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication.isAuthenticated();
     }

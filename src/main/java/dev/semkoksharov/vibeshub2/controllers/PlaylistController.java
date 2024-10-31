@@ -20,7 +20,7 @@ public class PlaylistController {
 
     private final PlaylistService playlistService;
 
-    public PlaylistController(PlaylistServiceImpl playlistService) {
+    public PlaylistController(PlaylistService playlistService) {
         this.playlistService = playlistService;
     }
 

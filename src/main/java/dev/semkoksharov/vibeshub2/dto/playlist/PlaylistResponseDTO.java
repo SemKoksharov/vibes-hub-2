@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.LinkedList;
 import java.util.Set;
 @Data
 @AllArgsConstructor
@@ -15,5 +16,5 @@ public class PlaylistResponseDTO {
     private Long id;
     private UserSimpleDTO user;
     private String title;
-    private Set<SongSimpleDTO> songs;
+    private LinkedList<SongSimpleDTO> songs;
 }
